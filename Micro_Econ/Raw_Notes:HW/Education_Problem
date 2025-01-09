@@ -1,0 +1,486 @@
+### A Pluto.jl notebook ###
+# v0.19.46
+
+using Markdown
+using InteractiveUtils
+
+# ╔═╡ 926b4730-a2e5-11ef-0c7e-79ffa5eb090d
+begin  
+    import Pkg   
+    Pkg.activate()  
+    
+	#using JuMP      # set up a model
+	#using Ipopt     # find a max or min
+	using Roots    # solve a single equation
+	#using NLsolve  # solve multiple equations
+	#using ForwardDiff # differentiate a function
+	#using QuadGK   # integrate a function
+    #using DynamicalSystems #dynamical systems
+    # using DifferentialEquations  
+	using Plots     # plot graphs
+	using PlutoUI   # use sliders, etc., in Pluto
+	using LaTeXStrings # use LaTeX in graphs
+      #using Printf #allows you to use sprintf
+end
+
+# ╔═╡ 80d689dd-94e8-46d8-bbf5-1f59f25429b3
+PlutoUI.TableOfContents(title="Sections", indent=true, depth=4, aside=true)
+
+# ╔═╡ f9bcb756-38fc-48c3-b77e-33a93042c498
+md"""
+ # Education Problem
+"""
+
+# ╔═╡ 894f9449-9aa0-4203-9499-e3e06d091144
+begin #parameters
+	wl=20
+	wh=50
+	l=40
+	β=.8
+	N=100
+end
+
+# ╔═╡ 4f7b097f-f5fd-432a-9bad-816bde1df8db
+begin #equations
+	α(i)=1 - (i/N)
+	u(x)=sqrt(x)
+	du(x)=.5*(x)^(-.5)
+	
+end;
+
+# ╔═╡ 2ce38832-4343-4bfb-bbf2-e5820097dda9
+αhat=1-((u(l)+β*u(wh - l))-(u(wl)+β*u(wl)))
+
+# ╔═╡ 87fd637d-0ca0-4e4f-b6e4-4869cdf3d5d5
+n=(1-αhat)*N
+
+# ╔═╡ 1cca9b91-1696-47b4-b1c5-d1a3bdba8696
+ivec=collect(range(0,N,length=101))
+
+# ╔═╡ fbff0bf5-aff1-44f8-895a-d65236b98d8b
+αvec=reverse(α.(ivec))
+
+# ╔═╡ 3c4a980b-fc60-4906-ada7-a54f8ff5b8f4
+nvec=collect(range(0,N,length=101))
+
+# ╔═╡ 876133a6-6eea-4f11-ac60-53a142b0f4dc
+md"""
+Each Graduate faces a choice between lifetime utility 
+
+$\begin{equation*}
+  U^j=u(w^l)+βu(w^l)
+\end{equation*}$
+if they get a job immediately, and 
+
+$\begin{equation*}
+  U^c=u(l)-e(α)+βu(w^h-l)
+\end{equation*}$
+if they go to college. If we treat all variables as exogenous to the individual graduates, then the only decision they face is whether to go to college or not, and this will obviously be determiend by how $U^c$ compares to $U^j$. If we "break indifference" by assuming that graduates will go to college if $U^c=U^j$, then we get that college goers are those for whom
+
+$\begin{equation*}
+  U^c ≥ U^j
+\end{equation*}$
+
+$\begin{equation*}
+  ⟷ u(l)-e(α)+βu(w^h-l) ≥ u(w^l)+βu(w^l). 
+\end{equation*}$
+To simplify the problem further, assume that the e(α) function is linear, of the form $e=1-α$. We can rewrite the inequality further as 
+
+$\begin{equation*}
+  u(l)-[1-α]+βu(w^h-l) ≥ u(w^l)+βu(w^l)
+\end{equation*}$
+
+$\begin{equation*}
+ ↔  [u(l)+βu(w^h-l)]-[u(w^l)+βu(w^l)] ≥  1-α
+\end{equation*}$
+
+$\begin{equation*}
+  ↔ α ≥ 1 - \{[u(l)+βu(w^h-l)]-[u(w^l)+βu(w^l)] \} ≡ \hat{α}
+\end{equation*}$
+In other words, there is a critical level of ability $\hat{α}$ above which graduates will choose to go to college. 
+
+Assume, now also that α is distributed uniformly on interval [0,1] across all $N$ graduates. Specifically, if we line up all graduates by decling ability, we get that $α=1$ for the very first graduates and $α=0$ for the very last, N-th graduate, and more generally, for the ith graduate,
+"""
+
+# ╔═╡ 455c367a-8efe-4878-8d8d-57539988a10d
+begin
+    ithgrads = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(ivec, α.(ivec), linecolor=:black, linestyle=:solid, linewidth=2)
+	plot!([N,N], [0,1.2*maximum(α.(ivec))], linecolor=:black, linestyle=:solid, linewidth=2)
+	 # Axis limits
+    xlims!(0, 1.05*ivec[end])
+    ylims!(0, 1.2*maximum(α.(ivec)))
+	  # Axis labels
+    annotate!(1.02*xlims(ithgrads)[2], 0, text(L"i", :left, :center, 12))
+    annotate!(0, 1.01*ylims(ithgrads)[2], text(L"α", :center, :bottom, 12))
+	 # Axis ticks
+    xticks!([0.001, N], [L"0", L"N"])
+    yticks!([0.001,α(ivec[1])], [L"0", L"1"])
+	# Curve labels
+    flx = 40
+    fly = 1.01*α(flx)
+    annotate!(flx, fly, text(L"α(i)=1-\dfrac{i}{N}", :left, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   ithgrads	
+end
+
+# ╔═╡ 0cac0d57-e195-46c7-9b08-550799e6ea46
+md"""
+## Market Equilibrium
+"""
+
+# ╔═╡ 1501e309-e79f-4f87-807f-ac1cccd9fc76
+md"""
+$\begin{equation*}
+  n=[1-\hat{α}]N
+\end{equation*}$
+"""
+
+# ╔═╡ 98ea78da-da42-4cb9-9173-a65394a429b8
+begin
+    equilibrium = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(αvec, (1 .- αvec) .* N, linecolor=:black, linestyle=:solid, linewidth=2)
+	plot!([αhat,αhat], [0,N], linecolor=:black, linestyle=:solid, linewidth=2)
+	# Key points, with dashed lines to them
+    plot!([0,αhat], [n,n], linecolor=:black, linestyle=:dash)
+    scatter!([αhat], [n], markercolor=:black, markersize=5)
+	 # Axis labels
+    annotate!(1.02*xlims(equilibrium)[2], 0, text(L"α", :left, :center, 12))
+    annotate!(0, 1.01*ylims(equilibrium)[2], text(L"N", :center, :bottom, 12))
+
+	  # Axis ticks
+    xticks!([0.001, αhat], [L"0", L"\hat{\alpha}"])
+    yticks!([0.001, n], [L"0", L"n"])
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   equilibrium	
+end
+
+# ╔═╡ 03bd1f86-72a7-4b75-86c2-327582886f9d
+md"""
+## Comparative Statics
+"""
+
+# ╔═╡ 22282987-a199-4563-9e5a-c190f32c28c5
+md"""
+First-Order Consitions
+
+$\begin{align*}
+  \dfrac{dn}{dw^l}&=[u'(w^l)+βu'(w^l)]N=0 \\
+ \dfrac{dn}{dw^h}&=[-βu_{w^h}(w^h - l)]N=0 \\
+\dfrac{dn}{dl}&=[-u_{l}(l)+βu_l(w^h -l)]N=0 \\
+\dfrac{dn}{dβ}&=[-u(w^h-l)+u(w^h)]N=0 \\
+\dfrac{dn}{dN}&=-u(l)-βu(w^h -l)+u(w^l)+βu(w^l)=0
+\end{align*}$
+"""
+
+# ╔═╡ 6bbc3c48-fbde-4253-878d-d8a57023bc33
+dwl(wl)=(du(wl)+β*du(wl))*N
+
+# ╔═╡ 6ab9691a-5160-48c9-b430-0b0ce287b831
+wlvec=collect(range(0,100,length=101))
+
+# ╔═╡ 1e84627e-a1a2-465e-8277-d700c0d38940
+begin
+    focwl = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(wlvec, dwl.(wlvec), linecolor=:black, linestyle=:solid, linewidth=2)
+	 # Curve labels
+    annotate!(40, dwl(40)+1, text(L"\dfrac{dn}{dw^l}", :left, :bottom, 18))
+	 # Axis labels
+    annotate!(1.02*xlims(focwl)[2], 10, text(L"w^l", :left, :center, 12))
+    annotate!(0, 1.01*ylims(focwl)[2], text(L"n", :center, :bottom, 12))
+
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   focwl	
+end
+
+# ╔═╡ 01e09bf8-5b16-4a70-9c8c-c8871c56a2fb
+dwh(wh)=(-β*du(wh-l))*N
+
+# ╔═╡ 0c40fca3-1d34-4ca8-ae88-351279728cc1
+function dwh_foc(N)
+
+# Define the zero condition at the parameter value supplied
+cond(p) = dwh(N)
+
+# Specify a starting guess
+N0 = 10
+
+# Find and return the solution
+N = find_zero(cond, N0)
+
+end;
+
+# ╔═╡ 7807971f-ef7b-414a-90d0-a85d199b305d
+whvec=collect(range(l,100,length=101))
+
+# ╔═╡ a191cef9-618b-4192-96be-41644caefc32
+begin
+    focwh = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(whvec, dwh.(whvec), linecolor=:black, linestyle=:solid, linewidth=2)
+	 # Curve labels
+    annotate!(40, dwh(50), text(L"\dfrac{dn}{dw^h}", :left, :bottom, 18))
+	 # Axis labels
+    annotate!(1.02*xlims(focwl)[2], 10, text(L"w^l", :left, :center, 12))
+    annotate!(0, 1.01*ylims(focwl)[2], text(L"n", :center, :bottom, 12))
+	# Axis limits
+    xlims!(0, 1.05*whvec[end])
+    ylims!(1.2*minimum(dwh.(whvec)), 1.2*maximum(dwh.(whvec)))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   focwh
+end
+
+# ╔═╡ 199065e4-295a-45f0-843d-5303c36bf383
+dl(l)=(-du(wh-l)+β*du(wh-l))*N
+
+# ╔═╡ b03c6b29-f2f0-41d6-aa7e-b3dcd41648e4
+lvec=collect(range(0,wh,length=101))
+
+# ╔═╡ dfc79fa0-ea5d-4cc1-9fe5-500dccd1ada5
+begin
+    focl = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(lvec, dl.(lvec), linecolor=:black, linestyle=:solid, linewidth=2)
+	 # Curve labels
+    annotate!(40, dl(50), text(L"\dfrac{dn}{dw^h}", :left, :bottom, 18))
+	 # Axis labels
+    annotate!(1.02*xlims(focl)[2], 10, text(L"l", :left, :center, 12))
+    annotate!(0, 1.01*ylims(focl)[2], text(L"n", :center, :bottom, 12))
+	# Axis limits
+    xlims!(0, 1.05*lvec[end])
+    ylims!(1.2*minimum(dl.(lvec)), 1.2*maximum(dl.(lvec)))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   focl
+end
+
+# ╔═╡ Cell order:
+# ╠═926b4730-a2e5-11ef-0c7e-79ffa5eb090d
+# ╠═80d689dd-94e8-46d8-bbf5-1f59f25429b3
+# ╟─f9bcb756-38fc-48c3-b77e-33a93042c498
+# ╠═894f9449-9aa0-4203-9499-e3e06d091144
+# ╠═4f7b097f-f5fd-432a-9bad-816bde1df8db
+# ╠═87fd637d-0ca0-4e4f-b6e4-4869cdf3d5d5
+# ╠═2ce38832-4343-4bfb-bbf2-e5820097dda9
+# ╠═1cca9b91-1696-47b4-b1c5-d1a3bdba8696
+# ╠═fbff0bf5-aff1-44f8-895a-d65236b98d8b
+# ╠═3c4a980b-fc60-4906-ada7-a54f8ff5b8f4
+# ╟─876133a6-6eea-4f11-ac60-53a142b0f4dc
+# ╟─455c367a-8efe-4878-8d8d-57539988a10d
+# ╟─0cac0d57-e195-46c7-9b08-550799e6ea46
+# ╟─1501e309-e79f-4f87-807f-ac1cccd9fc76
+# ╟─98ea78da-da42-4cb9-9173-a65394a429b8
+# ╟─03bd1f86-72a7-4b75-86c2-327582886f9d
+# ╟─22282987-a199-4563-9e5a-c190f32c28c5
+# ╠═6bbc3c48-fbde-4253-878d-d8a57023bc33
+# ╠═6ab9691a-5160-48c9-b430-0b0ce287b831
+# ╟─1e84627e-a1a2-465e-8277-d700c0d38940
+# ╠═01e09bf8-5b16-4a70-9c8c-c8871c56a2fb
+# ╠═0c40fca3-1d34-4ca8-ae88-351279728cc1
+# ╠═7807971f-ef7b-414a-90d0-a85d199b305d
+# ╟─a191cef9-618b-4192-96be-41644caefc32
+# ╠═199065e4-295a-45f0-843d-5303c36bf383
+# ╠═b03c6b29-f2f0-41d6-aa7e-b3dcd41648e4
+# ╟─dfc79fa0-ea5d-4cc1-9fe5-500dccd1ada5

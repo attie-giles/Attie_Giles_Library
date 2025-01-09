@@ -1,0 +1,346 @@
+### A Pluto.jl notebook ###
+# v0.19.46
+
+using Markdown
+using InteractiveUtils
+
+# ╔═╡ f31e69c0-a1e0-11ef-3f37-75439aec14a5
+begin  
+    import Pkg   
+    Pkg.activate()  
+    
+	#using JuMP      # set up a model
+	#using Ipopt     # find a max or min
+	using Roots    # solve a single equation
+	#using NLsolve  # solve multiple equations
+	#using ForwardDiff # differentiate a function
+	#using QuadGK   # integrate a function
+    #using DynamicalSystems #dynamical systems
+    # using DifferentialEquations  
+	using Plots     # plot graphs
+	using PlutoUI   # use sliders, etc., in Pluto
+	using LaTeXStrings # use LaTeX in graphs
+      #using Printf #allows you to use sprintf
+end
+
+# ╔═╡ 98369a4f-6b7c-4233-a74c-9c208b1d8318
+PlutoUI.TableOfContents(title="Sections", indent=true, depth=4, aside=true)
+
+# ╔═╡ eb80f5ca-e598-4c35-8302-f1b7c73c65ea
+md"""
+# Cake Problem
+"""
+
+# ╔═╡ 4e5ff172-671b-4ccb-bdb4-71f12a04cbff
+md"""
+Cake Problem
+A consumer who lives for two periods derives utility upxtq from consuming $x_t$ units of cake in period $t ∈ \{1,2 \}$ but discounts her future utility by discount factor $β ≡ 1/(1+r)$ . At the beginning of period 1, she has $S_1$ units of cake, which she can store without loss up to period
+2. Assume that $u'(x+t)>0$ and$u''(x+t)<0$for all $x_t$. Assume also that $\lim_{x_t → 0}u'(x_t)=∞$, so the nonnegativity constraint on xt will not bind in either period.
+
+(a) Set up and solve the consumer’s optimization problem of optimally allocating the stock of
+cake S1 over consumption in periods 1 and 2, using the “one fell swoop” approach whereby
+she chooses x1 and x2 up front, subject to her resource contraint. Plot the solution in to-
+tal and marginal space (with x1 on the horizontal axis), as well as in $(x_1,x_2)$ space (with indifference curves).
+
+(b) Set up and solve the consumer’s problem using the “backward induction” approach. Under this approach, the consumer realizes that she does not have to choose $x_2$ until the beginning of period 2, given whatever is left of the stock of cake at that time, S2. Moreover, when she chooses $x_1$ at the beginning of period 1, she anticipates that she will choose x2 optimally in the next period. Using backward induction implies first solving the consumer’s optimization problem in period 2, and then her optimization problem in period 1 anticipating her own future “reaction” to whatever stock $S_2$ she will find herself with at the beginning of period 2. In other words, the anticipated solution of the consumer’s period-2 problem, $x^*_2(S_2)$, becomes one of the equations of the period-1 problem, as does an equation that determines how $S_2$ depends on the consumer’s period-1 choice of $x_1$.
+"""
+
+# ╔═╡ ec94c480-9748-4fdb-a58a-a8e36eb27569
+md"""
+## Question A
+"""
+
+# ╔═╡ ba0c9af3-249b-40d7-937d-e787a0e926ee
+md"""
+Exogenous Variables:
+
+$\begin{equation*}
+  S_1 = \text{Consumer's initial stock of cake}
+\end{equation*}$
+
+$\begin{equation*}
+  β= \text{Discount Factor}
+\end{equation*}$
+
+Equations: 
+
+The consumer's optimization problem is 
+
+$\begin{equation*}
+  \max_{x_1,x_2}U=u(x_1)+βu(x2),
+\end{equation*}$
+
+subject to the cake constraint
+
+$\begin{equation*}
+  x_1+x_2 ≤ S_1
+\end{equation*}$
+
+The associated Lagrangian is 
+
+$\begin{equation*}
+  \mathcal{L}=u(x_1)+βu(x2) + λ[S_1-x_1-x_2],
+\end{equation*}$
+
+with Kuhn-Tucker conditions
+
+$\begin{equation*}
+  \dfrac{\partial \mathcal{L}}{\partial x_1} = u'(x_1)-λ=0 
+\end{equation*}$
+
+$\begin{equation*}
+  \dfrac{\partial \mathcal{L}}{\partial x_2} = β u'(x_2)-λ=0
+\end{equation*}$
+
+$\begin{equation*}
+   \dfrac{\partial \mathcal{L}}{\partial λ} = S_1-x_1-x_2 ≤ 0
+\end{equation*}$
+
+$\begin{equation*}
+   λ\dfrac{\partial \mathcal{L}}{\partial λ} = λ[S_1-x_1-x_2] = 0
+\end{equation*}$
+
+The case $λ=0$ can be ruled out as inconsisten with condition (foc $x_1$), given out assumption that $u' > 0$. By complementary-slackness condition (cs λ), the remaining case λ>0 implies that the cake constraint is binding, so 
+
+$\begin{equation*}
+  S=x_1 + x_2
+\end{equation*}$
+
+With n=2 choice variables and $e=1$ binding constaint, the second-order conditions is that the determinant bordered Hessian must have the sign sign as $(-1)^n=-1^2=1$, i.e.e be positive. The determinant is 
+
+$\begin{equation*}
+-u''(x_1) - βu''(x_2)=0
+\end{equation*}$
+ """
+
+# ╔═╡ a631b9e8-d34a-4d4d-a17d-39926d6ee5d6
+begin #parameters
+	β=.5
+	S1=40
+end;
+
+# ╔═╡ cb92d586-dc0c-4963-bb50-47b84091565a
+begin #Equations
+	U(x1)=u(x1)+β * u(S1-x1)
+	u(x)=log(x+1)
+	u_x(x)=1/(x+1)
+	U2(x1)=B(x1) - C(x1)
+	B(x1)=β* u(x1) + u(x1)
+	C(x1)=β*(u(S1)-u(S1-x1))
+	x2(x1)=S1-x1
+	U1(x1,x2)=u(x1) + β * u(x2)
+	
+	#---------------------------------------------------------------------------#
+	MB(x1)= 1 / (x1+1)
+	MC(x1)= β* (1/(S1-x1 +1))
+	
+end;
+
+# ╔═╡ 1408af16-552d-477b-81fc-a935669f2a71
+x1vec=collect(range(0,S1,length=101))
+
+# ╔═╡ 8c83b5bb-1d53-4d02-81ad-24584779ce8a
+function x1opt(x1)
+
+# Define the zero condition at the parameter value supplied
+cond(x1) = MB(x1)-MC(x1)
+
+# Specify a starting guess
+x0 = 20
+
+# Find and return the solution
+x1 = find_zero(cond, x0)
+
+end;
+
+# ╔═╡ 8b406b14-2325-465e-90b3-ceadd4b7d578
+begin
+    total = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(x1vec, B.(x1vec), linecolor=:black, linestyle=:solid, linewidth=2)
+	plot!(x1vec, C.(x1vec), linecolor=:black, linestyle=:solid, linewidth=2)
+	plot!([S1,S1], [0,1.2*maximum(B.(x1vec))], linecolor=:black, linestyle=:solid, linewidth=2)
+	 # Key points, with dashed lines to them
+    plot!([x1opt(x1vec),x1opt(x1vec)], [0,B.(x1opt(x1vec))], linecolor=:black, linestyle=:dash) 
+    plot!([0,x1opt(x1vec)], [B.(x1opt(x1vec)),B.(x1opt(x1vec))], linecolor=:black, linestyle=:dash)
+	 plot!([0,x1opt(x1vec)], [C.(x1opt(x1vec)),C.(x1opt(x1vec))], linecolor=:black, linestyle=:dash)
+	scatter!([x1opt(x1vec)], [C.(x1opt(x1vec))], markercolor=:black, markersize=5)
+    scatter!([x1opt(x1vec)], [B.(x1opt(x1vec))], markercolor=:black, markersize=5)
+	 # Curve labels
+    flx = 10
+    fly = 1.2*B(flx)
+    annotate!(flx, fly, text(L"B=u(x1)", :left, :bottom, 12))
+
+	# Curve labels
+    flx1 = 25
+    fly1 = 1.2*C(flx)
+    annotate!(flx1, fly1, text(L"C=β[u(S_1)-u(S_1-x_1)]", :left, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   total	
+end
+
+# ╔═╡ 1a57ee9c-7373-4655-ba1d-1ddac67459de
+begin
+    marginal = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(x1vec, MB.(x1vec), linecolor=:black, linestyle=:solid, linewidth=2)
+ 	plot!(x1vec, MC.(x1vec), linecolor=:black, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(0, 1.05*x1vec[end])
+    ylims!(0, .5)
+	 # Key points, with dashed lines to them
+    plot!([x1opt(x1vec),x1opt(x1vec)], [0,MB.(x1opt(x1vec))], linecolor=:black, linestyle=:dash) 
+    plot!([0,x1opt(x1vec)], [MB.(x1opt(x1vec)),MB.(x1opt(x1vec))], linecolor=:black, linestyle=:dash)
+    scatter!([x1opt(x1vec)], [MB.(x1opt(x1vec))], markercolor=:black, markersize=5)
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   marginal	
+end
+
+# ╔═╡ aef0b28d-c3bb-4bb9-8fd9-81bbfc39b393
+U2(x1opt(x1vec))
+
+# ╔═╡ 77f30796-6f7f-44a5-9ece-98b6e6dea905
+begin
+    Indifference = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(x1vec, x2.(x1vec), linecolor=:black, linestyle=:solid, linewidth=2)
+
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   Indifference	
+end
+
+# ╔═╡ Cell order:
+# ╠═f31e69c0-a1e0-11ef-3f37-75439aec14a5
+# ╠═98369a4f-6b7c-4233-a74c-9c208b1d8318
+# ╟─eb80f5ca-e598-4c35-8302-f1b7c73c65ea
+# ╟─4e5ff172-671b-4ccb-bdb4-71f12a04cbff
+# ╟─ec94c480-9748-4fdb-a58a-a8e36eb27569
+# ╟─ba0c9af3-249b-40d7-937d-e787a0e926ee
+# ╠═a631b9e8-d34a-4d4d-a17d-39926d6ee5d6
+# ╠═cb92d586-dc0c-4963-bb50-47b84091565a
+# ╠═1408af16-552d-477b-81fc-a935669f2a71
+# ╠═8c83b5bb-1d53-4d02-81ad-24584779ce8a
+# ╟─8b406b14-2325-465e-90b3-ceadd4b7d578
+# ╟─1a57ee9c-7373-4655-ba1d-1ddac67459de
+# ╠═aef0b28d-c3bb-4bb9-8fd9-81bbfc39b393
+# ╠═77f30796-6f7f-44a5-9ece-98b6e6dea905

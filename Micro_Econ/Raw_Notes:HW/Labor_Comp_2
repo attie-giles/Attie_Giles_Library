@@ -1,0 +1,1532 @@
+### A Pluto.jl notebook ###
+# v0.19.46
+
+using Markdown
+using InteractiveUtils
+
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
+# ╔═╡ 668580f8-6a08-11ef-2d7b-d5dbaadefd68
+begin  
+    import Pkg   
+    Pkg.activate()  
+    
+	#using JuMP      # set up a model
+	#using Ipopt     # find a max or min
+	using Roots    # solve a single equation
+	#using NLsolve  # solve multiple equations
+	using ForwardDiff # differentiate a function
+	#using QuadGK   # integrate a function
+	using Plots     # plot graphs
+	using PlutoUI   # use sliders, etc., in Pluto
+	using LaTeXStrings # use LaTeX in graphs
+end
+
+# ╔═╡ 2a0be720-5b84-409b-aab9-188748208787
+PlutoUI.TableOfContents(title="Sections", indent=true, depth=4, aside=true)
+
+# ╔═╡ 494b2cb3-e216-4049-827d-746f7fc4c0b3
+md"""
+# Competitve-Firm Manager Problem
+"""
+
+# ╔═╡ b36183e6-6ff3-4c13-a8eb-821351d8c4d8
+md"""
+## Setting up the Problem
+"""
+
+# ╔═╡ d4d1f71c-3bd2-4b1d-bb4f-cbd14f7fa174
+md"""
+A competitive firm is defined as an instituiton that produces commodities for sale in a given market whose end goal is to mazimize profits. The competitive market in this model is defined by the characterisitc that there are so many firms producing the same commodity that each firm cannot dictate the price of the commodity, but must set the same general price else they will lose business to the other firms. The optimization problem in this model is for each firm to determine how much to spend on production for each commodity, with the chief determinant of costs being the wage rate paid to labor. In this model the market for wage labor is also competitive, which means that like setting the price for the commodity to sell, the each firm must also pay the same wage rate as all the other firms, else they will lose labor to another firm. It is under these constaints that we analyze the optimization problem for each firm and determine what the optimal amount of labor is for the goal of maximizing profits. 
+"""
+
+# ╔═╡ eb346604-8992-4867-acca-53659c9d7974
+md"""
+After outlining the basic problem, we must determine that functional form that allows for modeling the story listed above. There are two types of variables in this model, the endogeneous variables that each firm can either directly or indirectly control and the exogeneous variables that no firm can control. Which can be symbolized as 
+
+**Endogeneous Variables**:
+
+$π \equiv Profit$
+$R \equiv Revenues$
+$C \equiv Cost$
+$q \equiv Quantity \enspace Produced$
+$L \equiv Labor \enspace Employed$
+and
+
+**Exogeneous Variables**:
+
+$P \equiv Commodity \enspace Price$
+$w \equiv Wage \enspace Price$
+
+The main difference between these two types of variables is that endogeneous variables can be listed as relationships between other endogeneous variables and exogeneous variables, while exogeneous variables are more like parameters that can not be determined by a relationship with other variables in the model.
+
+"""
+
+# ╔═╡ 05e494bb-1d00-4a83-877b-2852bbfff5a5
+md"""
+As determined by the setup for the model above, the competitive-firm problem is trying to maximize profts given the contraints of these other variables. We can model what those constraints are by equations between the endogenous and exogeneous variables.
+
+**Relationship Equations**
+
+$π = R - C$
+$R = Pq$
+$C = wL$
+$q = q(L)$
+
+These relationships determine that this problem is solvable because there are four equations with six unknowns. In the next section we will show how the relationships can be modeled to solve the specific profit maximization problem for the competitive firm in the competitive market.
+
+"""
+
+# ╔═╡ 0e29f5c1-547b-476c-ab63-c5017c6b2142
+md"""
+## Solving the Problem
+"""
+
+# ╔═╡ 36168242-a1ae-4193-9fb1-3b8619c8cefa
+md"""
+The optimization goal for each competitive-firm manager is to maximize profits. As stated in the first section the competitive-firm manager must maximize profits given the constraints of the market price for both labor and commodities produced along with the constraints of production of said commodities. His problem can be stated as
+
+**Maximize Profits π** 
+
+$π = R-C$
+
+**Under Constraints**
+
+$R=Pq$
+$C=wL$
+$q=q(L)$
+
+The first step in solving would be to simplify the profits equation by inserting the definitional form of the profit equation containing the variables revenue and cost, with the functional form relations for each variables defined above. So working from left to right the profits equation can be simplified to
+
+**Maximize Profits π** 
+
+$π = Pq-C$
+
+**Under Constraints**
+
+$C=wL$
+$q=q(L)$
+
+This allows us to remove an equation from the constraints list and insert it into the optimization problem. Doing the same for costs we have
+
+**Maximize Profits π** 
+
+$π = Pq-wL$
+
+**Under Constraints**
+
+$q=q(L)$
+
+Finally solving for the last variable quantity produced this can be represented as a fucntion of the labor emplyed, which gives
+
+**Maximize Profits π** 
+
+$π = Pq(L)-wL$
+
+where all the constraints previously defined have been inserted into the target equation for maximization. This equation can be understood as single-variable equation of labor that determines profits given the parameters of commodity price and wage price. 
+
+$\begin{equation*}
+  π(L) = Pq(L)-wL
+\end{equation*}$
+
+To maximize this problem we have to find where the first derivative of thi equation with relaiton to labor is equal to zero and where the second derivative of this equation with relation to labor is negative. Which can be written as
+
+**In order to maximize π with relation to L**
+
+$\begin{equation*}
+  \frac{dπ(L)}{dL} = 0
+\end{equation*}$
+
+and
+
+$\begin{equation*}
+    \frac{dπ^2(L)}{dL^2} < 0
+\end{equation*}$
+
+Doing this allows the firm manager to find the absolute maximum amount of profits. Finding the derivatives for the actual equation gives
+
+**In order to maximize π with relation to L**
+
+$\begin{equation*}
+  \frac{dπ(L)}{dL} = Pq'(L) - w 
+\end{equation*}$
+
+and
+
+$\begin{equation*}
+    \frac{dπ^2(L)}{dL^2} = Pq''(L)
+\end{equation*}$
+
+Focusing on the first derivative equation, treating the parameters of wage price and commodity price as variables, we can define the function as one of three variables
+
+$\begin{equation*}
+  f(P,L,w) = Pq'(L) - w 
+\end{equation*}$
+
+which as stated above is equivalent to zero,
+
+$\begin{equation*}
+  Pq'(L) - w = 0
+\end{equation*}$ 
+
+this allows us to implictly define the function implicitly for labor, which can be written as
+
+$\begin{equation*}
+  L^* = L^*(P,w) 
+\end{equation*}$
+
+Where $L^*$ represents the optimal amount of labor employed which is where the first derivative of the profit equation is equivalent to zero. Isolating one of the initial constaint equations for quantity
+
+$\begin{equation*}
+  q = q(L)
+\end{equation*}$
+
+we can plug in this optimal amount of labor funciton, $L^*$, to find the optimal amount of quanity to produce. Which gives
+
+$\begin{equation*}
+  q^* = q(L^*)
+\end{equation*}$
+
+and simplifies to 
+
+$\begin{equation*}
+  q^* = q(L^*(P,w))
+\end{equation*}$
+
+Thus the answer to the profit maximization problem is to produce quantity of output where the optimal amount of labor is being utilized which is determined by the where the first derivative of the profit function is zero. The only cavaet is to determine that the optimal amount of labor employed is at the absolute maximum for profits and not just a local maximum, which can be understood where the second derivatve of the profit equation
+
+$\begin{equation*}
+    \frac{dπ^2(L)}{dL^2} = Pq''(L)
+\end{equation*}$
+
+must be less than zero
+
+$Pq''(L) < 0$
+
+This equation can also be modeled implicitly for labor where
+
+$L^{**} = L^{**}(P)$
+
+is the absolute optimal amount of labor to employ that determines the absolute maximum amount of problems. So in order to ensure that the absolute amount of profits is reach these two quantities for labor must equal each other,
+
+$\begin{equation*}
+  L^* = L^{**}
+\end{equation*}$
+
+and if that relation holds, then 
+
+$\begin{equation*}
+  q^* = q(L^*(P,w))
+\end{equation*}$
+
+will determine the absolute optimal amount of quantity to produce so as to find the absolute maximum profits.
+
+"""
+
+# ╔═╡ d1475e02-fd1a-4dd3-af85-99ca903c9ec7
+md"""
+## Relating this problem to the Vanilla optimization problem
+"""
+
+# ╔═╡ 665f5097-fc97-4dee-97a9-06dcc44e5d55
+md"""
+The vanilla optimization problem can be understood as similar to the competitive-firm manager problem listed above in that the vanilla optimization problem also invloves a competitive firm manager looking to maximizing the amount of profits for his commodity in a competitive market, but the question of how much labor to employ is not necessarily stated outright. Instead the costs incurred in production of the commodities are the simply the total cost it takes to produce the quantities.
+"""
+
+# ╔═╡ 3403bcc4-b835-4076-b78b-f5fe6449f95f
+md"""
+So similar to the problem listed above, the vanilla problem can be listed as relations of both endogeneous variables that the firm can directly or indirectly control and exogeneous variables that firm cannot control. 
+
+**Endogeneous Variables**:
+
+$π \equiv Profit$
+$R \equiv Revenues$
+$C \equiv Cost$
+$q \equiv Quantity \enspace Produced$
+
+and
+
+**Exogeneous Variables**:
+
+$P \equiv Commodity \enspace Price$
+
+Where the relationship equations are 
+
+**Relationship Equations**
+
+$π = R - C$
+$R = Pq$
+$C = C(q)$
+
+These relationships determine that this problem is solvable because there are three equations with four unknowns. Like the problem in the first part the appropriate steps can be taken so as to maximize the profit equation under the constraints of the other equations, which results in a profit equation as a function of quantity,
+
+$\begin{equation*}
+  π(q) = Pq - C(q)
+\end{equation*}$
+
+where the first and second derivatives are
+
+$\begin{equation*}
+  \frac{dπ(q)}{dq} = P - C'(q)
+\end{equation*}$
+
+$\begin{equation*}
+  \frac{dπ^2(q)}{d^2q} = - C''(q)
+\end{equation*}$
+
+where the maximal profits occur when 
+
+$\begin{equation*}
+  \frac{dπ(q)}{dq} = 0
+\end{equation*}$
+
+and
+
+$\begin{equation*}
+  \frac{dπ^2(q)}{d^2q} < 0
+\end{equation*}$
+
+This can be seen as the same general set of equations that defined the first problem where the differences are that quantity is not a function of anything and that the costs are the function of the quantity produced. The vanilla problem can be understood as the general form equation for competitive firms in where the quantity and costs can be defined as functions for whatever variables drive both quantity and costs. In the first problem the main driver for quantity produced was labor and the main driver for costs occurred are the amount of indviduals employed at the given wage rate. To show that the first problem is necessarily a subset of the other than we can plug in the definition of quantity from the first part into the vanilla equation to show they are the same under the correct conditions.
+
+$\begin{equation*}
+  π(q(L)) = Pq(L) - C(q(L))
+\end{equation*}$
+
+This now makes the cost function a function of labor, which if we constrain the cost function so as to only represent the cost of labor the above equation becomes
+
+$\begin{equation*}
+   π(q(L)) = Pq(L) - wL
+\end{equation*}$
+
+where as we defined
+
+$\begin{equation*}
+  C(q(L)) = wL
+\end{equation*}$
+"""
+
+# ╔═╡ 0b64e782-1e96-428d-ad0e-9ca71b109da3
+md"""
+## Example
+"""
+
+# ╔═╡ 43953bbc-674b-4467-bd09-d5b6e810a037
+md"""
+As an example say that a particular quantity function with labor as its major input is 
+
+$\begin{equation*}
+  q(L)=L^{1/\alpha},
+\end{equation*}$
+where $\alpha$ is the inverse productivity parameter where the higher the value of $\alpha$ the less marginal quantity is produced. This is represented graphically below with abritrary numbers determing the parameters of wage rate of labor and the price of the commodity. Below we will graph the revenues accrued with this production function as well as the costs. This will be done for both the quantity function of Labor above, but also for the Labor function of quantity which can be defined as the inverse function,
+
+$\begin{equation*}
+  L(q) = q^{\alpha}
+\end{equation*}$.
+
+Which represents the amount of Labor required given a certain quantity of commodities produced. 
+"""
+
+# ╔═╡ 3efd05b9-b142-4a31-8ab9-59d37f77bd17
+Lvec = collect(range(0.1,12,length=101));
+
+# ╔═╡ d8701ebe-82a5-4c09-b19d-9030f4546a2d
+qvec = collect(range(0,12,length=1001));
+
+# ╔═╡ eb753c79-8406-4f09-84ee-d7b415650ea9
+α = @bind α Slider(1.01:0.01:2, default=1.01, show_value=true)
+
+# ╔═╡ 5f47d492-15e5-49ed-806b-ae09d061418f
+md"""
+Using the Labor optimization problem and the Productiion function listed above, we are able to derive the form of the Vanilla optimization problem that is applicable to this particular firm. Take the Labor optimization problem,
+
+$\begin{equation*}
+  π(L)=PL^{1/\alpha}-wL
+\end{equation*}$
+and the quantity produced function from Labor as the only input,
+
+$\begin{equation*}
+  q(L)=L^{1/\alpha},
+\end{equation*}$
+using the inverse of this function that we stated above,
+
+$\begin{equation*}
+  L(q)=q^{\alpha}
+\end{equation*}$
+we are able to plug this value into the Labor Optimization proble and derive the vanilla optimization problem for this firm.
+
+$\begin{equation*}
+  π(q)=Pq-wq^{\alpha}
+\end{equation*}$
+where the revenues are determined by the price multiplied by quantity sold and cost is determined by the wage rate multiplied by the quantity prouced raised to the productivity paramter, which as showed above is derived from the quantity produced from Labor function. Doing the same as we did above for the Labor Optimization problem we will graph the vanilla problem below for Revenues, Costs, and Profits.
+"""
+
+# ╔═╡ 1e01de9f-c43b-4eb1-8267-134e82d8efb2
+md"""
+The above is a graphical representation of what was shown analytically in the first three parts. The Competitive-Firm Labor problem is a subset of the Vanilla Production function, where the forms of both equations and their graphical representations are similar because the quantity produced and cost function can be converted to the particular form relevent to production in that industry.
+"""
+
+# ╔═╡ 60cbb236-6e33-452d-b55a-f601ad27665f
+md"""
+## Production function $q(L)=γLog(L+1)$
+"""
+
+# ╔═╡ 7a09b935-c08c-4f40-8b14-7e4aab99ea41
+md"""
+The production $q(L)=γLog(L+1)$ where Labor is the independent variable can be solved implicitly for Labor as the dependent variables and quantity as the independent variable. 
+
+Take the production function 
+
+$\begin{equation*}
+  q(L)=γLog(L+1),
+\end{equation*}$
+transform it into the implicit function
+
+$\begin{equation*}
+  q=γLog(L+1),
+\end{equation*}$
+divide by $γ$
+
+$\begin{equation*}
+  \frac{q}{\gamma}=Log(L+1),
+\end{equation*}$
+raise both sides of the equation by the power of $ℯ$
+
+$\begin{equation*}
+  ℯ^{\frac{q}{γ}}=L+1,
+\end{equation*}$
+finally substract 1 from both sides and set the function so as it is a Labor function for quantity, such as
+
+$\begin{equation*}
+  L(q)=ℯ^{\frac{q}{γ}}-1
+\end{equation*}$
+
+"""
+
+# ╔═╡ 792eb893-e0a5-4beb-beef-6c7da416a007
+md"""
+Plotting both below gives,
+"""
+
+# ╔═╡ ad8d4390-e04f-4122-a80f-b0c946787f54
+w = @bind w Slider(1:0.1:20, default=2, show_value=true)
+
+# ╔═╡ e2cc8348-5dec-4709-b1c4-cd565267d046
+P = @bind P Slider(4:1:100.0, default=4, show_value=true)
+
+# ╔═╡ 73d29483-dda2-4798-ab17-209881687321
+π(L) = P*L^(1/α)-w*L;
+
+# ╔═╡ 06349be0-fd71-467a-bf16-a39dda2d29ea
+begin
+    total_space = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+	title="Total Space of q(L)",
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+ 	plot!(Lvec, P.*Lvec.^(1/α), linecolor=:black, linestyle=:solid, linewidth=2) 
+	plot!(Lvec, w.*Lvec, linecolor=:blue, linestyle=:solid, linewidth=2)
+	plot!(Lvec, π.(Lvec), linecolor=:red, linestyle=:solid, linewidth=2)
+	 # Axis labels
+    annotate!(1.02*xlims(total_space)[2], 0, text(L"Labor", :left, :center, 12))
+    annotate!(0, 1.01*ylims(total_space)[2], text(L"Dollars", :center, :bottom, 12))
+
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   total_space   
+end
+
+
+# ╔═╡ 1b7eb9de-cc7d-4225-a58c-c44c6cfb54a5
+dπ(L)=(P/α)*L^(1/α-1)-w;
+
+# ╔═╡ 00c6f946-4eaf-42fb-8dd4-cd6e68fbc863
+begin
+    marginal_space = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+	title="Marginal Space of q(L)",
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Lvec, (P/α).*Lvec.^(1/α-1), linecolor=:black, linestyle=:solid, linewidth=2)
+	plot!([0,Lvec[end]], [w,w], linecolor=:blue, linestyle=:solid, linewidth=2)
+	plot!(Lvec, dπ.(Lvec), linecolor=:red, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(0, 1.05*Lvec[end])
+    ylims!(0, 1.2*maximum(dπ.(Lvec)))
+	# Axis labels
+    annotate!(1.02*xlims(marginal_space)[2], 0, text(L"Labor", :left, :center, 12))
+    annotate!(0, 1.01*ylims(marginal_space)[2], text(L"Dollars", :center, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   marginal_space   
+end
+
+
+# ╔═╡ 324d95ac-ff5d-4834-8581-7ccf3698b7b8
+π2(q) = P*q-w*q^α
+
+# ╔═╡ ef42efbc-2219-48cc-98a6-22eaa7672097
+begin
+    total_space_q= plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+	title="Total Space L(q)",
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(qvec, P.*(qvec), linecolor=:black, linestyle=:solid, linewidth=2)
+	plot!(qvec, w.*(qvec.^α), linecolor=:blue, linestyle=:solid, linewidth=2)
+	plot!(qvec, π2.(qvec), linecolor=:red, linestyle=:solid, linewidth=2)
+
+	# Axis labels
+    annotate!(1.02*xlims(total_space_q)[2], 0, text(L"Quantity", :left, :center, 12))
+    annotate!(0, 1.01*ylims(total_space_q)[2], text(L"Dollars", :center, :bottom, 12))
+
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   total_space_q   
+end
+
+
+# ╔═╡ e224e950-1c10-41b8-917e-8dbb23623f2c
+dπ2(q) = P-α*w*q^(α-1)
+
+# ╔═╡ 096cba93-bc65-40fc-a973-f1faa6c5e627
+begin
+    marginal_space_q = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+	title="Marginal Space of L(q)",
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+	plot!([0,qvec[end]], [P,P], linecolor=:blue, linestyle=:solid, linewidth=2)
+	plot!(qvec, (w*α).*(qvec.^(α-1)), linecolor=:black, linestyle=:solid, linewidth=2)
+    plot!(qvec, dπ2.(qvec), linecolor=:red, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(0, 1.05*qvec[end])
+    ylims!(0, 1.2*maximum(dπ2.(qvec)))
+	# Axis labels
+    annotate!(1.02*xlims(marginal_space_q)[2], 0, text(L"Quantity", :left, :center, 12))
+    annotate!(0, 1.01*ylims(marginal_space_q)[2], text(L"Dollars", :center, :bottom, 12))
+
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   marginal_space_q   
+end
+
+
+# ╔═╡ ee15b809-0324-42a1-b42e-05d2d74971a1
+γ = 4
+
+# ╔═╡ e250ceed-f087-4bc2-856f-2d84651b41b4
+pvec = copy(Lvec)
+
+# ╔═╡ 282a27c0-5577-4848-900b-a25cfd65dc2f
+wvec = copy(pvec)
+
+# ╔═╡ e54746e9-61e5-4cb0-b2fb-15783249cfcf
+q(L)=γ*log(L+1);
+
+# ╔═╡ 92e902ab-f4be-48a5-a182-6103a7a70c4f
+L(q)=ℯ^(q/γ)-1;
+
+# ╔═╡ a58adee9-a3d3-412a-abac-b2276c769502
+md"""
+Using both these in the optimization problem for the firm gives the functional form of 
+
+$\begin{equation*}
+  π(L)=PγLog(L+1)-wL
+\end{equation*}$
+and
+
+$\begin{equation*}
+  π(q)=Pq-wℯ^{\frac{q}{\gamma}}+w
+\end{equation*}$
+Plotting both the revenues and costs of these equations for both total and maringal space we can see that they are fundamentally the same.
+"""
+
+# ╔═╡ b0529a4b-1d87-4910-9f54-c06239c74bb6
+πL(L)=P*γ*log(L+1)-w*L;
+
+# ╔═╡ 150d4e81-94e5-4b17-9e55-201d69063ebf
+dπL(L)=(P*γ)/(L+1)-w;
+
+# ╔═╡ e261b2ea-5df7-4a02-be8e-a37490c1347b
+πq(q)=P*q-w*ℯ^(q/γ)+w;
+
+# ╔═╡ f6630ddd-850e-41df-b4b2-03d17a55b1d1
+dπq(q)=P-(w/γ)*ℯ^(q/γ);
+
+# ╔═╡ f8a2a003-ad91-45fb-bf69-ca8845aa2b6e
+Lsolve=find_zero(dπL,5);
+
+# ╔═╡ 2daf4226-d46c-4c55-8f4a-dc62e9767a77
+RdπL(L)=(P*γ)/(L+1);
+
+# ╔═╡ 19c7a659-6dec-487f-95c2-4360b44a8f4d
+qsolve=find_zero(dπq,5);
+
+# ╔═╡ 48308c09-2dcd-401e-b543-54eca3c7fac2
+Cdπq(q)=(w/γ)*ℯ^(q/γ);
+
+# ╔═╡ be16e7ab-309d-4a22-9cb6-dea283956df4
+begin
+    q_of_L2 = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+	title="q(L) Total Space Optimization Problem",
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Lvec, πL.(Lvec), linecolor=:red, linestyle=:solid, linewidth=2)
+	plot!(Lvec, (P*γ).*log.(Lvec.+1), linecolor=:black, linestyle=:solid, linewidth=2)
+	plot!(Lvec, w.*Lvec, linecolor=:blue, linestyle=:solid, linewidth=2)
+
+	# Axis limits
+    xlims!(0, 1.05*Lvec[end])
+     ylims!(0, 50)
+	# Axis labels
+    annotate!(1.02*xlims(q_of_L2)[2], 1, text(L"Labor", :left, :center, 12))
+    annotate!(0, 1.01*ylims(q_of_L2)[2], text(L"Dollars", :center, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   q_of_L2   
+end
+
+
+# ╔═╡ f58c65c6-c8ee-4d76-b188-99b00f95a7e2
+begin
+    dq_of_L2 = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+	title="q(L) Marginal Space Optimization Problem",
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Lvec, dπL.(Lvec), linecolor=:red, linestyle=:solid, linewidth=2)
+	plot!(Lvec, (P*γ)./(Lvec.+1), linecolor=:black, linestyle=:solid, linewidth=2)
+	plot!([0,Lvec[end]], [w,w], linecolor=:blue, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(0, 1.05*Lvec[end])
+    ylims!(0, 1.2*maximum(dπL.(Lvec)))
+	# Axis labels
+    annotate!(1.02*xlims(dq_of_L2)[2], .5, text(L"Labor", :left, :center, 12))
+    annotate!(0, 1.01*ylims(dq_of_L2)[2], text(L"Dollars", :center, :bottom, 12))
+	# Key points, with dashed lines to them
+    plot!([Lsolve,Lsolve], [0,RdπL(Lsolve)], linecolor=:black, linestyle=:dash) 
+    plot!([0,Lsolve], [RdπL(Lsolve),RdπL(Lsolve)], linecolor=:black, linestyle=:dash)
+    scatter!([Lsolve], [RdπL(Lsolve)], markercolor=:black, markersize=5)
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   dq_of_L2   
+end
+
+
+# ╔═╡ ac02fe6a-6a92-4e65-8bc2-671f844a8841
+begin
+    L_of_q2 = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+	title="L(q) Total Space Optimization Problem",
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(qvec, πq.(qvec), linecolor=:red, linestyle=:solid, linewidth=2)
+	plot!(qvec, P.*qvec, linecolor=:black, linestyle=:solid, linewidth=2)
+	plot!(qvec, w.*ℯ.^(qvec./γ).+w, linecolor=:blue, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(0, 1.05*qvec[end])
+    ylims!(0, 50)
+	# Axis labels
+    annotate!(.98*xlims(L_of_q2)[2], 1, text(L"Quantity", :left, :center, 12))
+    annotate!(0, 1.01*ylims(L_of_q2)[2], text(L"Dollars", :center, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   L_of_q2   
+end
+
+
+# ╔═╡ 4389978d-83d5-440b-b00b-08aad2adb784
+begin
+    dL_of_q2 = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+	title="L(q) Marginal Space Optimization Problem",
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(qvec, dπq.(qvec), linecolor=:red, linestyle=:solid, linewidth=2)
+	plot!(qvec, (w/γ).*ℯ.^(qvec./γ), linecolor=:blue, linestyle=:solid, linewidth=2)
+	plot!([0,qvec[end]], [P,P], linecolor=:black, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(0, 1.05*Lvec[end])
+    ylims!(0, 1.2*maximum(dπL.(Lvec)))
+	# Axis labels
+    annotate!(.96*xlims(dL_of_q2)[2], 1, text(L"Quantity", :left, :center, 12))
+    annotate!(0, 1.01*ylims(dL_of_q2)[2], text(L"Dollars", :center, :bottom, 12))
+	# Key points, with dashed lines to them
+    plot!([qsolve,qsolve], [0,Cdπq(qsolve)], linecolor=:black, linestyle=:dash) 
+    plot!([0,qsolve], [Cdπq(qsolve),Cdπq(qsolve)], linecolor=:black, linestyle=:dash)
+    scatter!([qsolve], [Cdπq(qsolve)], markercolor=:black, markersize=5)
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   dL_of_q2   
+end
+
+
+# ╔═╡ 530227c8-be31-4848-b9f7-cabaeba750f7
+md"""
+## Labor Demanded and Output Supplied
+"""
+
+# ╔═╡ 55dde606-acae-4597-ba96-b339986a2219
+md"""
+When defining the Labor demanded function L(P, w) we must first take the profit optimizatin problem,
+
+$\begin{equation*}
+   π(L)=PγLog(L+1)-wL 
+\end{equation*}$
+and differntiate it ith respect to Labor and set it equal to zero to find the optimal amount of labor to employ. Which becomes
+
+$\begin{equation*}
+  π_L(L)=\frac{P\gamma}{L+1}-w=0
+\end{equation*}$
+Solving explicitly for Labor we get
+
+$\begin{equation*}
+  L(P,w)=\frac{P\gamma}{w}-1,
+\end{equation*}$
+which can be interpreted as a function of both wage and Price of the commodity. 
+"""
+
+# ╔═╡ 10c721ff-1a34-404b-836f-ce4501ddd366
+function Hot_Start3(L, w)
+	cond1(P) = L - ((P*γ)/w - 1)
+	for i = 1:length(Lvec) 
+	P20 = Lvec[i]
+		try 
+		P=find_zero(cond1, P20)
+			return P
+		catch e
+			if isa(e, TypeError)
+				continue
+			end
+		end
+	end
+end;
+	
+
+# ╔═╡ 53e063ac-f22f-4063-9fa8-826c4bc0d039
+L(P,w)=(P*γ)/w - 1;
+
+# ╔═╡ 8b4fc421-1da6-4656-b744-3f6a8cc0951a
+begin
+    L_of_p_function = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+	title="L(q)",
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(qvec, L.(qvec), linecolor=:black, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(0, 12)
+    ylims!(0, 12)
+	# Axis labels
+    annotate!(.99*xlims(L_of_p_function)[2], .5, text(L"Quantity", :left, :center, 12))
+    annotate!(0, 1.01*ylims(L_of_p_function)[2], text(L"Labor", :center, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   L_of_p_function   
+end
+
+
+# ╔═╡ 280b96c0-8905-4e98-8945-503ba3cef996
+md"Plot Labor Demand Implicitly: $(@bind Plot_Labor_demand CheckBox(default=false))"
+
+# ╔═╡ 280f0526-2e82-4f51-93f8-00c627de1737
+begin
+    L_P_w = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+	 plot!(L.(pvec,w), pvec, linecolor=:black, linestyle=:solid, linewidth=2)
+	if Plot_Labor_demand == true
+	 plot!(Lvec,Hot_Start3.(Lvec,w) , linecolor=:red, linestyle=:solid, linewidth=2)
+	end
+	 # Axis labels
+    annotate!(12, .5, text(L"Labor", :left, :center, 12))
+    annotate!(0, 12, text(L"Price", :center, :bottom, 12))
+	 # Axis limits
+    xlims!(0, 12)
+    ylims!(0, 12)
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   L_P_w	
+end
+
+# ╔═╡ 11dd9294-5b47-46d1-9ed0-844efe3ae824
+md"""
+As can be seen from this graph as the price of the commodities increase when wages stay the same, then the amount of labor demanded increases. Below we will plot the same function modeling the amount of Labor demanded when wages change instead of price.
+"""
+
+# ╔═╡ c549a70a-d57e-455d-b212-86224c6f1bc2
+md"Plot Labor Demand Implicitly: $(@bind Plot_Labor_demand2 CheckBox(default=false))"
+
+# ╔═╡ 0e734033-076b-4819-b26d-efc02cb69d5e
+function Hot_Start4(L, P)
+	cond1(w) = L - ((P*γ)/w - 1)
+	for i = 1:length(Lvec) 
+	w20 = Lvec[i]
+		try 
+		w=find_zero(cond1, w20)
+			return w
+		catch e
+			if isa(e, TypeError)
+				continue
+			end
+		end
+	end
+end;
+	
+
+# ╔═╡ 271f1a7c-344d-420a-aa26-9a2a9da3b46a
+begin
+    L_P_w2 = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+ plot!(L.(P,wvec), wvec, linecolor=:black, linestyle=:solid, linewidth=2)
+	if Plot_Labor_demand2 == true
+	 plot!(Lvec,Hot_Start4.(Lvec,P) , linecolor=:red, linestyle=:solid, linewidth=2)
+	end
+	 # Axis labels
+    annotate!(12, .5, text(L"Labor", :left, :center, 12))
+    annotate!(0, 12, text(L"Wage", :center, :bottom, 12))
+	 # Axis limits
+    xlims!(0, 12)
+    ylims!(0, 12)
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   L_P_w2	
+end
+
+# ╔═╡ d8061057-32ad-46d7-a0a7-2046ba226612
+md"""
+As was expected when wages decrease the amount of labor demanded increases and vice versa. As we did before for Labor demanded if we want to find the quantity supplied we must first take the profit optimization problem with respect to quantity.
+
+$\begin{equation*}
+  π(q)=Pq-wℯ^{\frac{q}{\gamma}}+w
+\end{equation*}$
+Take the first order conditions with respect to quantity and set them equal to zero which is 
+
+$\begin{equation*}
+  π_q(q)=P-\frac{w}{\gamma}ℯ^\frac{q}{\gamma}=0.
+\end{equation*}$
+Which when we solve becomes
+
+$\begin{equation*}
+  q(P,w) = \gamma Log(\frac{P\gamma}{w})
+\end{equation*}$
+We can then model this function both explicitly and implicitly to find the how quantity supplied changes with both Price and wage. 
+"""
+
+# ╔═╡ 21074392-0a4e-4413-bc78-9e4dadbc1497
+q(P,w) = γ*log((P*γ)/w);
+
+# ╔═╡ 8bba2322-6cb0-43ed-ab69-f1b5e6bfcfac
+begin
+    q_of_L_function = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+	title="q(L)",
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Lvec, q.(Lvec), linecolor=:black, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(0, 1.05*Lvec[end])
+    ylims!(0, 1.2*maximum(q.(Lvec)))
+	# Axis labels
+    annotate!(1.02*xlims(q_of_L_function)[2], .5, text(L"Labor", :left, :center, 12))
+    annotate!(0, 1.01*ylims(q_of_L_function)[2], text(L"Quantity", :center, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   q_of_L_function   
+end
+
+
+# ╔═╡ 571c4112-b2f8-4859-ad35-6c994cc21e7f
+md"Plot Quantity Supplied: $(@bind plot_quantity_supplied CheckBox(default=false))"
+
+# ╔═╡ ab77d562-c43e-42e7-94f1-e794d3eae518
+function Hot_Start5(q, w)
+	cond1(P) = q - (γ*log((P*γ)/w))
+	for i = 1:length(qvec) 
+	P20 = qvec[i]
+		try 
+		P=find_zero(cond1, P20)
+			return P
+		catch e
+			if isa(e, TypeError)
+				continue
+			end
+		end
+	end
+end;
+	
+
+# ╔═╡ 078fadcb-29ee-459c-a442-c43462b00e13
+begin
+    p_q_w = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(q.(pvec,w), pvec, linecolor=:black, linestyle=:solid, linewidth=2)
+	if plot_quantity_supplied == true
+    plot!(qvec, Hot_Start5.(qvec,w), linecolor=:red, linestyle=:solid, linewidth=2)	
+	end
+	 # Axis labels
+    annotate!(11.5, .5, text(L"Quantity", :left, :center, 12))
+    annotate!(0, 12, text(L"Price", :center, :bottom, 12))
+	 # Axis limits
+    xlims!(0, 12)
+    ylims!(0, 12)
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   p_q_w	
+end
+
+# ╔═╡ a11c8de6-575b-490b-9b74-d2618fbc4410
+md"""
+As can be seen from the graph the amount of quantity supplied increases with the price of the good being supplied assuming wages are constant. Below we graph quantity supplied and wages. 
+"""
+
+# ╔═╡ 406c0e00-5f23-486f-a88d-bb742daee10e
+function Hot_Start6(q, P)
+	cond1(w) = q - (γ*log((P*γ)/w))
+	for i = 1:length(qvec) 
+	w20 = qvec[i]
+		try 
+		w=find_zero(cond1, w20)
+			return w
+		catch e
+			if isa(e, TypeError)
+				continue
+			end
+		end
+	end
+end;
+
+# ╔═╡ bce1fc99-bc17-408e-88a7-1bd9ccbb0ad5
+md"Plot Quantity Supplied: $(@bind plot_quantity_supplied2 CheckBox(default=false))"
+
+# ╔═╡ 34ff088c-3a12-4f9e-bf3f-1ae41cae8315
+begin
+    p_q_w2 = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(q.(P,wvec), wvec, linecolor=:black, linestyle=:solid, linewidth=2)
+	if plot_quantity_supplied2 == true
+    plot!(qvec, Hot_Start6.(qvec,P), linecolor=:red, linestyle=:solid, linewidth=2)	
+	end
+	 # Axis labels
+    annotate!(11.5, .5, text(L"Quantity", :left, :center, 12))
+    annotate!(0, 12, text(L"Wage", :center, :bottom, 12))
+	 # Axis limits
+    xlims!(0, 12)
+    ylims!(0, 12)
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :middle, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   p_q_w2
+end
+
+# ╔═╡ df723e47-efe2-4388-8350-4f5923303788
+md"""
+As can be seen from this graph that as wages increase the amount of quantity supplied decreases, assuming a constant price. 
+"""
+
+# ╔═╡ Cell order:
+# ╠═668580f8-6a08-11ef-2d7b-d5dbaadefd68
+# ╠═2a0be720-5b84-409b-aab9-188748208787
+# ╟─494b2cb3-e216-4049-827d-746f7fc4c0b3
+# ╟─b36183e6-6ff3-4c13-a8eb-821351d8c4d8
+# ╠═d4d1f71c-3bd2-4b1d-bb4f-cbd14f7fa174
+# ╟─eb346604-8992-4867-acca-53659c9d7974
+# ╟─05e494bb-1d00-4a83-877b-2852bbfff5a5
+# ╟─0e29f5c1-547b-476c-ab63-c5017c6b2142
+# ╟─36168242-a1ae-4193-9fb1-3b8619c8cefa
+# ╟─d1475e02-fd1a-4dd3-af85-99ca903c9ec7
+# ╟─665f5097-fc97-4dee-97a9-06dcc44e5d55
+# ╟─3403bcc4-b835-4076-b78b-f5fe6449f95f
+# ╟─0b64e782-1e96-428d-ad0e-9ca71b109da3
+# ╟─43953bbc-674b-4467-bd09-d5b6e810a037
+# ╠═3efd05b9-b142-4a31-8ab9-59d37f77bd17
+# ╠═d8701ebe-82a5-4c09-b19d-9030f4546a2d
+# ╠═eb753c79-8406-4f09-84ee-d7b415650ea9
+# ╠═73d29483-dda2-4798-ab17-209881687321
+# ╟─06349be0-fd71-467a-bf16-a39dda2d29ea
+# ╟─1b7eb9de-cc7d-4225-a58c-c44c6cfb54a5
+# ╟─00c6f946-4eaf-42fb-8dd4-cd6e68fbc863
+# ╟─5f47d492-15e5-49ed-806b-ae09d061418f
+# ╠═324d95ac-ff5d-4834-8581-7ccf3698b7b8
+# ╟─ef42efbc-2219-48cc-98a6-22eaa7672097
+# ╠═e224e950-1c10-41b8-917e-8dbb23623f2c
+# ╟─096cba93-bc65-40fc-a973-f1faa6c5e627
+# ╟─1e01de9f-c43b-4eb1-8267-134e82d8efb2
+# ╟─60cbb236-6e33-452d-b55a-f601ad27665f
+# ╟─7a09b935-c08c-4f40-8b14-7e4aab99ea41
+# ╟─792eb893-e0a5-4beb-beef-6c7da416a007
+# ╠═ad8d4390-e04f-4122-a80f-b0c946787f54
+# ╠═e2cc8348-5dec-4709-b1c4-cd565267d046
+# ╠═ee15b809-0324-42a1-b42e-05d2d74971a1
+# ╠═e250ceed-f087-4bc2-856f-2d84651b41b4
+# ╠═282a27c0-5577-4848-900b-a25cfd65dc2f
+# ╠═e54746e9-61e5-4cb0-b2fb-15783249cfcf
+# ╠═92e902ab-f4be-48a5-a182-6103a7a70c4f
+# ╟─8bba2322-6cb0-43ed-ab69-f1b5e6bfcfac
+# ╟─8b4fc421-1da6-4656-b744-3f6a8cc0951a
+# ╟─a58adee9-a3d3-412a-abac-b2276c769502
+# ╠═b0529a4b-1d87-4910-9f54-c06239c74bb6
+# ╠═150d4e81-94e5-4b17-9e55-201d69063ebf
+# ╠═e261b2ea-5df7-4a02-be8e-a37490c1347b
+# ╠═f6630ddd-850e-41df-b4b2-03d17a55b1d1
+# ╠═f8a2a003-ad91-45fb-bf69-ca8845aa2b6e
+# ╠═2daf4226-d46c-4c55-8f4a-dc62e9767a77
+# ╠═19c7a659-6dec-487f-95c2-4360b44a8f4d
+# ╠═48308c09-2dcd-401e-b543-54eca3c7fac2
+# ╟─be16e7ab-309d-4a22-9cb6-dea283956df4
+# ╟─f58c65c6-c8ee-4d76-b188-99b00f95a7e2
+# ╟─ac02fe6a-6a92-4e65-8bc2-671f844a8841
+# ╟─4389978d-83d5-440b-b00b-08aad2adb784
+# ╠═530227c8-be31-4848-b9f7-cabaeba750f7
+# ╟─55dde606-acae-4597-ba96-b339986a2219
+# ╠═10c721ff-1a34-404b-836f-ce4501ddd366
+# ╠═53e063ac-f22f-4063-9fa8-826c4bc0d039
+# ╟─280b96c0-8905-4e98-8945-503ba3cef996
+# ╠═280f0526-2e82-4f51-93f8-00c627de1737
+# ╟─11dd9294-5b47-46d1-9ed0-844efe3ae824
+# ╟─c549a70a-d57e-455d-b212-86224c6f1bc2
+# ╠═0e734033-076b-4819-b26d-efc02cb69d5e
+# ╟─271f1a7c-344d-420a-aa26-9a2a9da3b46a
+# ╟─d8061057-32ad-46d7-a0a7-2046ba226612
+# ╠═21074392-0a4e-4413-bc78-9e4dadbc1497
+# ╟─571c4112-b2f8-4859-ad35-6c994cc21e7f
+# ╟─ab77d562-c43e-42e7-94f1-e794d3eae518
+# ╠═078fadcb-29ee-459c-a442-c43462b00e13
+# ╟─a11c8de6-575b-490b-9b74-d2618fbc4410
+# ╠═406c0e00-5f23-486f-a88d-bb742daee10e
+# ╠═bce1fc99-bc17-408e-88a7-1bd9ccbb0ad5
+# ╟─34ff088c-3a12-4f9e-bf3f-1ae41cae8315
+# ╟─df723e47-efe2-4388-8350-4f5923303788

@@ -1,0 +1,201 @@
+### A Pluto.jl notebook ###
+# v0.19.46
+
+using Markdown
+using InteractiveUtils
+
+# ╔═╡ 5e74c8ee-6597-11ef-0d6c-a509d18f046a
+begin  
+    import Pkg   
+    Pkg.activate()  
+    
+	#using JuMP      # set up a model
+	#using Ipopt     # find a max or min
+	using Roots    # solve a single equation
+	#using NLsolve  # solve multiple equations
+	#using ForwardDiff # differentiate a function
+	#using QuadGK   # integrate a function
+	using Plots     # plot graphs
+	using PlutoUI   # use sliders, etc., in Pluto
+	using LaTeXStrings # use LaTeX in graphs
+end
+
+# ╔═╡ 43789b95-b77b-4afa-91c7-4647f61ec1cf
+PlutoUI.TableOfContents(title="Sections", indent=true, depth=4, aside=true)
+
+# ╔═╡ 56d0bcf4-8961-41f8-ad3a-f6ebec2ea790
+md"""
+# The Competitve-Firm Problem of choosing the optimal amount of labor, given Production Function q=q(L)
+"""
+
+# ╔═╡ 3de43f0a-a026-4e06-af5b-842e91e05a98
+md"""
+A competitive-firm manager in a competitive market is looking to maximize profits given the contraints of running the firm and producing output q. A competitive market is defined under the context that each firm must take the given price of the market for both their product and the wage labor they employ and can only dictate the amount of product they produce to bring to market.
+
+Variables under control (directly or indirectly)
+
+$π = Profit$
+$q = quantity$
+$R = Revenues$
+$C = Costs$
+$L = Labor$
+
+Variables not under control (even indirectly)
+
+$P = Price$
+$w = wage$
+
+The Variables under control: $π$, $q$, $R$, $C$, and $L$ are endogeneous variables which are variables that can be described amongst relationships with other endogeneous variables and exogeneous variables, while $P$ and $w$ are exogeneous variables that cannot be described by other variables in the set of endogeneous variables.
+
+The relationships between the endogeneous variables are as follows...
+
+$\begin{equation*}
+  \pi = R - C
+\end{equation*}$
+
+$\begin{equation*}
+  R = Pq
+\end{equation*}$
+
+$\begin{equation*}
+  C = c(q) + wL
+\end{equation*}$
+
+$\begin{equation*}
+  q = q(L)
+\end{equation*}$
+
+
+Where $c$ represents the individual cost function per unit of product $q$. Holding the $π$ function aside because this is the equation that Competitve-Firms Managers are looking to maximize. 
+
+Maximize
+
+$\begin{equation*}
+  π = R - C
+\end{equation*}$
+
+$\begin{equation*}
+--------------------------------
+\end{equation*}$
+
+Subject to 
+
+$\begin{equation*}
+  R = Pq
+\end{equation*}$
+
+$\begin{equation*}
+  C = c(q) + wL
+\end{equation*}$
+
+$\begin{equation*}
+  q = q(L)
+\end{equation*}$
+
+Now we currently have three constraint equations subject to the variables $P$, $q$, $c$, $q$, and $L$. In this model the quantity is determined by Labor and the cost is determined by the output $q$. Setting aside the Revenue Equation $R$...
+
+$\begin{equation*}
+   R = Pq
+\end{equation*}$
+
+$\begin{equation*}
+--------------------------------
+\end{equation*}$
+
+$\begin{equation*}
+  q = q(L)
+\end{equation*}$
+
+Plugging this value of Quantity $q$ into the Revenue equation $R$ gives...
+
+$\begin{equation*}
+     R = Pq(L)
+\end{equation*}$
+
+Which now reduces the amount of endogeneuous variables and equations to maximize Profit π. The Profit equation now becomes...
+
+Maximize
+
+$\begin{equation*}
+  π = Pq(L) - C
+\end{equation*}$
+
+$\begin{equation*}
+--------------------------------
+\end{equation*}$
+
+Subject to 
+
+$\begin{equation*}
+  C = c(q) + wL
+\end{equation*}$
+
+Similar to the Revenue Equation, this endogeneous variable $C$ can be represented as...
+
+$\begin{equation*}
+  C = c(q) + wL
+\end{equation*}$
+
+$\begin{equation*}
+--------------------------------
+\end{equation*}$
+
+$\begin{equation*}
+  q = q(L)
+\end{equation*}$
+
+Plugging the equation $q$ into the Cost function, results in a profit equation of the one endogeneous variable, Labor, which determines the output, as well as, the cost.
+
+$\begin{equation*}
+  π(L) = Pq(L) - c(q(L)) - wL
+\end{equation*}$
+
+For the Competitive-Firm Manger looking to maximze profits he will have to determine how much labor to hire. The optimal amount of labor that will produce the maximum profits is the amount where the first derivative equals zero. 
+
+$\begin{equation*}
+  \frac{dπ(L)}{dL} = Pq'(L) - c'(q(L))q'(L)-w 
+\end{equation*}$
+
+Setting this equation equal to $0$ 
+
+$\begin{equation*}
+  0 = Pq'(L) - c'(q(L))q'(L)-w 
+\end{equation*}$
+
+This equation can be set to equal wage,
+
+$\begin{equation*}
+  w = Pq'(L) - c'(q(L))q'(L)
+\end{equation*}$
+simplifying
+
+$\begin{equation*}
+w = q'(L)(P - c'(q(L)))
+\end{equation*}$
+
+This equation can be interpreted as the optimal amount of labor to hire to maximize profits, is where the marginal quantity of product multiplied by Price minues the marginal cost for each product equals wage. 
+"""
+
+# ╔═╡ b635b97e-5e70-4b89-9f12-f17811a7ac14
+md"""
+# How this problem relates to the Vanilla Consumer Problem
+"""
+
+# ╔═╡ fccc32c8-4211-42d8-b6c3-9737728ab1f1
+md"""
+The Vanilla consumer problem can be understood as when perfectly rational indiviudals have a budget $I$ and are looking to maximize purhcasing products $x₁$ and $x₂$ subject to prices $p₁$ and $p₂$ which can be modeled as 
+
+$\begin{equation*}
+  I = p₁x₁ + p₂x₂
+\end{equation*}$
+
+The way this relates to the maximization of profits by Competiitve-Firm Managers is that individual consumers and Firm Managers both have to make a decision to optimize their budgets and profits, resepctively. The Firm manager has to hire Labor at the market price and the consumer has to purchase products at the given market prices, both of these are exogeneous variables that the firm and consumer cannot control. What they can control are the endogeneous variables, which is the amount of labor to hire and products to purchase. In this respect the two problems are the same because both individuals have to take prices and use them to maximize the given objective, whether it be profit or budget.
+"""
+
+# ╔═╡ Cell order:
+# ╟─5e74c8ee-6597-11ef-0d6c-a509d18f046a
+# ╟─43789b95-b77b-4afa-91c7-4647f61ec1cf
+# ╠═56d0bcf4-8961-41f8-ad3a-f6ebec2ea790
+# ╟─3de43f0a-a026-4e06-af5b-842e91e05a98
+# ╟─b635b97e-5e70-4b89-9f12-f17811a7ac14
+# ╟─fccc32c8-4211-42d8-b6c3-9737728ab1f1

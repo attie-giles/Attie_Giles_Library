@@ -1,0 +1,959 @@
+### A Pluto.jl notebook ###
+# v0.19.46
+
+using Markdown
+using InteractiveUtils
+
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
+# ╔═╡ 51415ee4-9d85-11ef-3384-7744d849f870
+begin  
+    import Pkg   
+    Pkg.activate()  
+    
+	using JuMP      # set up a model
+	using Ipopt     # find a max or min
+	#using Roots    # solve a single equation
+	#using NLsolve  # solve multiple equations
+	#using ForwardDiff # differentiate a function
+	#using QuadGK   # integrate a function
+	using Plots     # plot graphs
+	using PlutoUI   # use sliders, etc., in Pluto
+	using LaTeXStrings # use LaTeX in graphs
+end
+
+# ╔═╡ adf4f07d-b19e-407c-998a-c96950375151
+PlutoUI.TableOfContents(title="Sections", indent=true, depth=4, aside=true)
+
+# ╔═╡ e24dfe3e-c7cb-4b55-9760-61c5f8d19330
+md"""
+# Professor Problem
+"""
+
+# ╔═╡ 2127b02b-526e-4929-b8c5-752a39a40369
+md"""
+$\begin{equation*}
+  \max_{r_1,r_2,g_1,g_2}U=(r_1+1)(T-g_1+1)+δ(r_2+1)(T-g_2+1)
+\end{equation*}$
+subject to 
+
+$\begin{align*}
+  g_1+g_2 \geq T\\
+  r_1+g_1 \leq T \\
+ r_2 + g_2 \leq T \\
+r_1 ≥ 0\\
+r_2 ≥ 0\\
+g_1 ≥ 0\\
+g_2 ≥ 0
+\end{align*}$
+"""
+
+# ╔═╡ 188bb9a9-9576-4b52-9588-95a134849b7b
+md"""
+## Model Setup
+"""
+
+# ╔═╡ 044c5875-2af5-4b4d-891c-a5ef8c05df64
+δ = @bind δ Slider(0.0:0.1:.99, default=0.5, show_value=true)
+
+# ╔═╡ 6846768f-f458-4e1c-9f65-a71390e9fb35
+begin
+	U(r1,r2,g1,g2,δ,T)=(r1+1)*(T-g1+1)+δ*(r2+1)*(T-g2+1)
+	U_r1(T,g1)=T-g1+1
+	U_r2(T,g2,δ)=δ*(T-g2+1)
+	U_g1(r1)=-r1-1
+	U_g2(r2)=-δ*(r2+1)
+end;
+
+# ╔═╡ 66b8d32f-bb6a-4658-9048-608998f4a604
+function true_KT(T,δ)
+
+    # Set up the numerical model
+    model = Model(Ipopt.Optimizer)
+
+    # Suppress solver output
+    set_silent(model)
+
+	# Register any functions in the model, including their number of arguments
+    register(model, :U, 6, U; autodiff = true)
+
+    # Specify the variables to be optimized over
+    @variable(model, r1)
+	@variable(model, r2)
+	@variable(model, g1)
+	@variable(model, g2)
+        
+    # Specify the objective function
+    @NLobjective(model, Max, U(r1,r2,g1,g2,δ,T))
+
+    # Specify the constraints, in == or >= form
+    @NLconstraint(model, c1, g1+g2-T >= 0)
+    @NLconstraint(model, c2, T-g1-r1 >= 0)
+    @NLconstraint(model, c3, T-r2-g2 >= 0)
+	@NLconstraint(model, c4, r1 >= 0)
+	@NLconstraint(model, c5, r2 >= 0)
+	@NLconstraint(model, c6, g1 >= 0)
+	@NLconstraint(model, c7, g2 >= 0)
+	
+    # Pick starting values
+    set_start_value(r1, 2)
+	set_start_value(r2, 2)
+	set_start_value(g1, 2)
+	set_start_value(g2, 2)
+	
+    # Find the solution
+    JuMP.optimize!(model)
+
+	# Return the solution
+	r1opt = round(value(r1), digits=2)
+	r2opt = round(value(r2), digits=2)
+	g1opt = round(value(g1), digits=2)
+	g2opt = round(value(g2), digits=2)
+	λopt = round(dual(c1), digits=2)
+	μ1opt = round(dual(c2), digits=2)
+	μ2opt = round(dual(c3), digits=2)
+	v1opt = round(dual(c4), digits=2)
+	v2opt = round(dual(c5), digits=2)
+	w1opt = round(dual(c6), digits=2)
+	w2opt = round(dual(c7), digits=2)
+	
+	return r1opt, r2opt, g1opt, g2opt, λopt, μ1opt, μ2opt, v1opt, v2opt, w1opt, w2opt
+end;
+
+# ╔═╡ 70033a25-1779-48ce-bac2-5647df10c645
+r1opt_true(T,δ)=true_KT(T,δ)[1];
+
+# ╔═╡ 0ea27fe9-c0ce-4de6-a7c5-ed15e70ee29f
+r2opt_true(T,δ)=true_KT(T,δ)[2];
+
+# ╔═╡ f37fa7fa-d74a-45a8-b2db-868bb09be474
+g1opt_true(T,δ)=true_KT(T,δ)[3];
+
+# ╔═╡ 61a4e4df-1741-4352-b714-9633976a4f13
+g2opt_true(T,δ)=true_KT(T,δ)[4];
+
+# ╔═╡ b88d9c08-8e0b-450b-a07c-3f34d6997843
+λopt_true(T,δ)=true_KT(T,δ)[5];
+
+# ╔═╡ d6146049-e7fc-46e6-ad33-f92119182e2f
+μ1opt_true(T,δ)=true_KT(T,δ)[6];
+
+# ╔═╡ e403d997-0b8c-4f21-97f7-1e4ea4f8f3a8
+μ2opt_true(T,δ)=true_KT(T,δ)[7];
+
+# ╔═╡ 00595b18-9a7f-4bfd-8609-a20265f17ca2
+v1opt_true(T,δ)=true_KT(T,δ)[8];
+
+# ╔═╡ 94d5db43-47af-42e1-b7d8-f4189a8c8583
+v2opt_true(T,δ)=true_KT(T,δ)[9];
+
+# ╔═╡ 16f820a7-f98d-4adb-a482-4a250aa727fd
+w1opt_true(T,δ)=true_KT(T,δ)[10];
+
+# ╔═╡ 8ab55072-4e24-4bd8-b8c9-c1e580bb33ef
+w2opt_true(T,δ)=true_KT(T,δ)[11];
+
+# ╔═╡ 89e55d4c-3cce-406e-aae9-037c612c8eca
+T = 18
+
+# ╔═╡ f4e90186-74eb-48bf-b28f-634a3519cc8f
+Tvec=collect(range(-T-2,T+2,length=200))
+
+# ╔═╡ a6722bd0-98a0-46a2-b7b5-1bcc81f03688
+λopt_true.(Tvec,δ)
+
+# ╔═╡ 277afc47-a81f-4f92-b461-6a445122f8f7
+v2opt_true.(Tvec,δ)
+
+# ╔═╡ 4388c8b1-7e93-49bc-b5ef-2a9075513508
+md"""
+$\begin{align*}
+  \mathcal{L}=(r_1+1)(T-g_1+1)+δ(r_2+1)(T-g_2+1)+λ[g_1+g_2-T]+μ_1[T-r_1-g_1]\\
+
++μ_2[T-r_2-g_2]+ν_1r_1+ν_2r_2+w_1g_1+w_2g_2
+\end{align*}$
+"""
+
+# ╔═╡ 50f46b14-943a-4a81-b10c-46247f1ababc
+md"""
+## Optimal $r_1$
+"""
+
+# ╔═╡ aa3112c1-391c-47c2-97bc-0f3cfdfddc99
+begin
+    r1opt = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Tvec, r1opt_true.(Tvec,δ), linecolor=:black, linestyle=:solid, linewidth=2)
+	 plot!([T,T], [0,ylims(r1opt)[2]], linecolor=:black, linestyle=:dash, linewidth=2)
+	# Axis limits
+    xlims!(Tvec[1], Tvec[end])
+    ylims!(0, 20)
+	# Axis labels
+    annotate!(1.02*xlims(r1opt)[2], 1, text(L"T", :left, :center, 12))
+    annotate!(0, 1.01*ylims(r1opt)[2], text(L"r_1", :center, :bottom, 12))
+	# Curve labels
+    flx = 7
+    fly = 11
+    annotate!(flx, fly, text(L"r_1^{*}(T,δ)", :left, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   r1opt	
+end
+
+# ╔═╡ 7fe0eb89-5813-4831-a811-7c7bf58ac62d
+md"""
+## Optimal $r_2$
+"""
+
+# ╔═╡ 43772e5a-f15e-4a32-ba60-51b889ee374c
+begin
+    r2opt = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Tvec, r2opt_true.(Tvec,δ), linecolor=:black, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(Tvec[1], Tvec[end])
+    ylims!(-.01, .01)
+	 # Axis labels
+    annotate!(1.02*xlims(r2opt)[2], .001, text(L"T", :left, :center, 12))
+    annotate!(0, 1.01*ylims(r2opt)[2], text(L"r_2", :center, :bottom, 12))
+	  # Curve labels
+    annotate!(10, .001, text(L"r_2^{*}(T,δ)", :left, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   r2opt	
+end
+
+# ╔═╡ d469a117-9493-41c7-8d0a-000635bfe3c1
+md"""
+## Optimal $g_1$
+"""
+
+# ╔═╡ d80c45e1-4f61-453f-8fcb-924dfe278527
+begin
+    g1opt = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Tvec, g1opt_true.(Tvec,δ), linecolor=:black, linestyle=:solid, linewidth=2)
+	 # Axis limits
+    xlims!(Tvec[1], Tvec[end])
+    ylims!(-.01, .01)
+	# Axis labels
+    annotate!(1.02*xlims(g1opt)[2], .01, text(L"T", :left, :center, 12))
+    annotate!(0, 1.01*ylims(g1opt)[2], text(L"g_1", :center, :bottom, 12))
+	
+    annotate!(10, .001, text(L"g_1^{*}(T,δ)", :left, :bottom, 12))
+
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   g1opt	
+end
+
+# ╔═╡ e5656bd1-ab1e-40d8-a5d3-99e61e999bcd
+md"""
+## Optimal $g_2$
+"""
+
+# ╔═╡ 8e7545fe-86ee-41fd-936d-5cdc3a975ef0
+begin
+    g2opt = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Tvec, g2opt_true.(Tvec,δ), linecolor=:black, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(Tvec[1], Tvec[end])
+    ylims!(0, 20)
+	 # Axis labels
+    annotate!(1.02*xlims(g2opt)[2], 1, text(L"T", :left, :center, 12))
+    annotate!(0, 1.01*ylims(g2opt)[2], text(L"g_2", :center, :bottom, 12))
+	 annotate!(7, 11, text(L"g_2^{*}(T,δ)", :left, :bottom, 12))
+	plot!([T,T], [0,20], linecolor=:black, linestyle=:dash, linewidth=2)
+
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   g2opt	
+end
+
+# ╔═╡ 0f9b51e7-3914-4728-a3ac-225f53827ef4
+md"""
+## Optimal $\lambda$
+"""
+
+# ╔═╡ b0904377-507b-4175-a65a-c6726df77d3e
+begin
+    λopt = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Tvec, λopt_true.(Tvec,δ), linecolor=:black, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(Tvec[1], Tvec[end])
+    ylims!(0, 10)
+	 # Axis labels
+    annotate!(1.02*xlims(λopt)[2], .5, text(L"T", :left, :center, 12))
+    annotate!(0, 1.01*ylims(λopt)[2], text(L"λ", :center, :bottom, 12))
+	annotate!(10, 1, text(L"λ^{*}(T,δ)", :left, :bottom, 12))
+
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   λopt	
+end
+
+# ╔═╡ e6140155-fa10-4c04-bbb2-f429650537dc
+md"""
+## Optimal $μ_1$
+"""
+
+# ╔═╡ 6aa907ae-e8cb-4da6-aa95-36dda8e8d3b5
+begin
+    μ1opt = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Tvec, μ1opt_true.(Tvec,δ), linecolor=:black, linestyle=:solid, linewidth=2)
+    plot!([T,T], [0,20], linecolor=:black, linestyle=:dash, linewidth=2)
+	# Axis limits
+    xlims!(Tvec[1], Tvec[end])
+    ylims!(0, 20)
+	# Axis labels
+    annotate!(1.02*xlims(μ1opt)[2], 1, text(L"T", :left, :center, 12))
+    annotate!(0, 1.01*ylims(μ1opt)[2], text(L"μ_1", :center, :bottom, 12))
+	annotate!(10, 8, text(L"μ_1^{*}(T,δ)", :left, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   μ1opt	
+end
+
+# ╔═╡ 0e6c1df8-9da2-4a6f-8338-fa611dfb96f8
+md"""
+## Optimal $μ_2$
+"""
+
+# ╔═╡ 34dc50f8-518d-46b9-9003-775a6b5a78be
+begin
+    μ2opt = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Tvec, μ2opt_true.(Tvec,δ), linecolor=:black, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(Tvec[1], Tvec[end])
+    ylims!(0, 20)
+	 # Axis labels
+    annotate!(1.02*xlims(μ2opt)[2], 1, text(L"T", :left, :center, 12))
+    annotate!(0, 1.01*ylims(μ2opt)[2], text(L"μ_2", :center, :bottom, 12))
+	annotate!(10, 1, text(L"μ_2^{*}(T,δ)", :left, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   μ2opt	
+end
+
+# ╔═╡ f02de4d0-020a-404e-8a01-1537be142cdd
+md"""
+## Optimal $ν_1$
+"""
+
+# ╔═╡ 8629c9dc-2e4f-4082-882b-8d8257066ee1
+begin
+    v1opt = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Tvec, v1opt_true.(Tvec,δ), linecolor=:black, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(Tvec[1], Tvec[end])
+    ylims!(0, 20)
+	# Axis labels
+    annotate!(1.02*xlims(v1opt)[2], 1, text(L"T", :left, :center, 12))
+    annotate!(0, 1.01*ylims(v1opt)[2], text(L"ν_1", :center, :bottom, 12))
+	annotate!(10, 1, text(L"ν_1^{*}(T,δ)", :left, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   v1opt	
+end
+
+# ╔═╡ 54a5948c-f7b5-4a5b-b793-593567c4ca03
+md"""
+## Optimal $ν_2$
+"""
+
+# ╔═╡ 29421f46-66df-4cd0-b64f-8f700b82b961
+begin
+    v2opt = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Tvec, v2opt_true.(Tvec,δ), linecolor=:black, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(Tvec[1], Tvec[end])
+    ylims!(0, 20)
+	# Axis labels
+    annotate!(1.02*xlims(v2opt)[2], 1, text(L"T", :left, :center, 12))
+    annotate!(0, 1.01*ylims(v2opt)[2], text(L"ν_2", :center, :bottom, 12))
+	annotate!(10, 1, text(L"ν_2^{*}(T,δ)", :left, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   v2opt	
+end
+
+# ╔═╡ 30358ca2-a453-410e-ba2d-d8dfa1577810
+md"""
+## Optimal $\omega_1$
+"""
+
+# ╔═╡ c3608bf5-c1c1-4b09-9a9f-06f5b20af9e4
+begin
+    w1opt = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Tvec, w1opt_true.(Tvec,δ), linecolor=:black, linestyle=:solid, linewidth=2)
+	 plot!([T,T], [0,40], linecolor=:black, linestyle=:dash, linewidth=2)
+
+	# Axis limits
+    xlims!(Tvec[1], Tvec[end])
+    ylims!(0, 40)
+	# Axis labels
+    annotate!(1.02*xlims(w1opt)[2], 1, text(L"T", :left, :center, 12))
+    annotate!(0, 1.01*ylims(w1opt)[2], text(L"\omega_1", :center, :bottom, 12))
+	annotate!(6, 10, text(L"\omega_1^{*}(T,δ)", :left, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   w1opt	
+end
+
+# ╔═╡ 4d23a768-d40e-4a1e-8c60-308cce25c837
+md"""
+## Opitmal $ω_2$
+"""
+
+# ╔═╡ ad7b7239-cd10-48be-a899-ffde2ae5bf6e
+begin
+    w2opt = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Tvec, w2opt_true.(Tvec,δ), linecolor=:black, linestyle=:solid, linewidth=2)
+	# Axis limits
+    xlims!(Tvec[1], Tvec[end])
+    ylims!(0, 20)
+	# Axis labels
+    annotate!(1.02*xlims(w2opt)[2], 1, text(L"T", :left, :center, 12))
+    annotate!(0, 1.01*ylims(w2opt)[2], text(L"\omega_2", :center, :bottom, 12))
+	annotate!(10, 1, text(L"\omega_2^{*}(T,δ)", :left, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(f.(xVec)))
+    
+    # Axis labels
+    annotate!(1.02*xlims(pX)[2], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.01*ylims(pX)[2], text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f(0), f(xstar)], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,f(xstar)], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [f(xstar),f(xstar)], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [f(xstar)], markercolor=:black, markersize=5)
+    =#
+
+   w2opt	
+end
+
+# ╔═╡ a7b788a2-6917-4e4e-bac5-afee17c9e5eb
+md"""
+## Truth Table Results
+"""
+
+# ╔═╡ f87423e6-af71-46d1-afcd-01eaa4ee7c22
+md"""
+$\begin{align*}
+  λ>0\\
+μ_1>0\\
+μ_2>0\\
+v_1=0\\
+v_2>0\\
+w_1 > 0\\ 
+w_2=0
+\end{align*}$
+"""
+
+# ╔═╡ 0e98cc69-a5ac-467b-9d79-09b9774f5614
+md"""
+## Results
+"""
+
+# ╔═╡ 17f9ee20-3d96-49fc-804f-23dd39db7dd6
+md"""
+From the graph we see that there is only a single feasible case of the $2^7$ possible combinations. This case states that the professor will do all her research on day 1 and procrastinate her grading until day 2. From the truth table resutls we get 
+
+$\begin{align*}
+  	\dfrac{∂ \mathcal{L}}{∂r_1}& = T-g_1+1-μ_1=0 \\
+	\dfrac{∂ \mathcal{L}}{∂r_2}& = δT-δg_2+δ-μ_2+ν_2=0 \\
+	\dfrac{∂ \mathcal{L}}{∂g_1}& = -r_1-1+λ-μ_1+w_1=0 \\
+	\dfrac{∂ \mathcal{L}}{∂g_2}& = -δr_2-δ+λ-μ_2=0 \\
+	\dfrac{∂ \mathcal{L}}{∂λ}& = g_1+g_2-T=0 \\
+	\dfrac{∂ \mathcal{L}}{∂μ_1}& = T-r_1-g_1=0 \\
+	\dfrac{∂ \mathcal{L}}{∂μ_2}& = T-r_2-g_2=0 \\
+	\dfrac{∂ \mathcal{L}}{∂ν_2}& = r_2=0 \\
+	\dfrac{∂ \mathcal{L}}{∂w_2}& = g_1=0
+\end{align*}$
+"""
+
+# ╔═╡ Cell order:
+# ╠═51415ee4-9d85-11ef-3384-7744d849f870
+# ╠═adf4f07d-b19e-407c-998a-c96950375151
+# ╟─e24dfe3e-c7cb-4b55-9760-61c5f8d19330
+# ╟─2127b02b-526e-4929-b8c5-752a39a40369
+# ╟─188bb9a9-9576-4b52-9588-95a134849b7b
+# ╠═6846768f-f458-4e1c-9f65-a71390e9fb35
+# ╠═66b8d32f-bb6a-4658-9048-608998f4a604
+# ╠═70033a25-1779-48ce-bac2-5647df10c645
+# ╠═0ea27fe9-c0ce-4de6-a7c5-ed15e70ee29f
+# ╠═f37fa7fa-d74a-45a8-b2db-868bb09be474
+# ╠═61a4e4df-1741-4352-b714-9633976a4f13
+# ╠═b88d9c08-8e0b-450b-a07c-3f34d6997843
+# ╠═a6722bd0-98a0-46a2-b7b5-1bcc81f03688
+# ╠═d6146049-e7fc-46e6-ad33-f92119182e2f
+# ╠═e403d997-0b8c-4f21-97f7-1e4ea4f8f3a8
+# ╠═00595b18-9a7f-4bfd-8609-a20265f17ca2
+# ╠═94d5db43-47af-42e1-b7d8-f4189a8c8583
+# ╠═16f820a7-f98d-4adb-a482-4a250aa727fd
+# ╠═8ab55072-4e24-4bd8-b8c9-c1e580bb33ef
+# ╠═044c5875-2af5-4b4d-891c-a5ef8c05df64
+# ╠═89e55d4c-3cce-406e-aae9-037c612c8eca
+# ╠═f4e90186-74eb-48bf-b28f-634a3519cc8f
+# ╠═277afc47-a81f-4f92-b461-6a445122f8f7
+# ╟─4388c8b1-7e93-49bc-b5ef-2a9075513508
+# ╟─50f46b14-943a-4a81-b10c-46247f1ababc
+# ╟─aa3112c1-391c-47c2-97bc-0f3cfdfddc99
+# ╟─7fe0eb89-5813-4831-a811-7c7bf58ac62d
+# ╟─43772e5a-f15e-4a32-ba60-51b889ee374c
+# ╟─d469a117-9493-41c7-8d0a-000635bfe3c1
+# ╠═d80c45e1-4f61-453f-8fcb-924dfe278527
+# ╟─e5656bd1-ab1e-40d8-a5d3-99e61e999bcd
+# ╟─8e7545fe-86ee-41fd-936d-5cdc3a975ef0
+# ╟─0f9b51e7-3914-4728-a3ac-225f53827ef4
+# ╟─b0904377-507b-4175-a65a-c6726df77d3e
+# ╟─e6140155-fa10-4c04-bbb2-f429650537dc
+# ╟─6aa907ae-e8cb-4da6-aa95-36dda8e8d3b5
+# ╟─0e6c1df8-9da2-4a6f-8338-fa611dfb96f8
+# ╟─34dc50f8-518d-46b9-9003-775a6b5a78be
+# ╟─f02de4d0-020a-404e-8a01-1537be142cdd
+# ╟─8629c9dc-2e4f-4082-882b-8d8257066ee1
+# ╟─54a5948c-f7b5-4a5b-b793-593567c4ca03
+# ╟─29421f46-66df-4cd0-b64f-8f700b82b961
+# ╟─30358ca2-a453-410e-ba2d-d8dfa1577810
+# ╟─c3608bf5-c1c1-4b09-9a9f-06f5b20af9e4
+# ╟─4d23a768-d40e-4a1e-8c60-308cce25c837
+# ╟─ad7b7239-cd10-48be-a899-ffde2ae5bf6e
+# ╟─a7b788a2-6917-4e4e-bac5-afee17c9e5eb
+# ╟─f87423e6-af71-46d1-afcd-01eaa4ee7c22
+# ╟─0e98cc69-a5ac-467b-9d79-09b9774f5614
+# ╟─17f9ee20-3d96-49fc-804f-23dd39db7dd6
