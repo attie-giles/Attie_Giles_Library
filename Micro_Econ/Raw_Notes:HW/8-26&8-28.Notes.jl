@@ -86,6 +86,12 @@ is easy to solve for $x_2$ as an *explicit* function
 
 """
 
+# ╔═╡ f2a19553-4ee4-440a-a22a-9a68f410853c
+# ╠═╡ disabled = true
+#=╠═╡
+x2vec = copy(x1vec)
+  ╠═╡ =#
+
 # ╔═╡ dec96e13-6535-435d-a44f-8277b0dc1042
 p1 = 15
 
@@ -194,12 +200,6 @@ end;
 
 # ╔═╡ 198bbc54-595c-4ad0-b408-beab6f5ed808
 x1vec = collect(range(0.1, 13, length=10001))
-
-# ╔═╡ f2a19553-4ee4-440a-a22a-9a68f410853c
-# ╠═╡ disabled = true
-#=╠═╡
-x2vec = copy(x1vec)
-  ╠═╡ =#
 
 # ╔═╡ 44d80ce4-6428-4d47-a1fa-9c802f7d920f
 begin

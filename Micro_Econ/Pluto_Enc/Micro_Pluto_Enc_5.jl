@@ -1161,6 +1161,168 @@ md"""
 Here we have produced three of the exact same results using very different graphing methods. All these results stem from the very basic analytical methods for Kuhn-Tucker optimization which is a nonlinear optimization method founded on Lagrangian analysis.
 """
 
+# ╔═╡ f33b1ecb-4113-49c2-880b-73d0540ebb1e
+md"""
+## Kuhn-Tucker Consumer Problem
+"""
+
+# ╔═╡ 3972b9fc-0282-45cf-9919-8d95e023d052
+md"""
+$\begin{equation*}
+  \max_{x_1,x_2} U = 4x_1 + 4x_2 -x_1^2-x_2^2
+\end{equation*}$
+subject to 
+
+$\begin{equation*}
+  Y \geq x_1 + x_2
+\end{equation*}$
+This can be rewritten in Lagrangian form as
+
+$\begin{equation*}
+  \mathcal{L} = 4x_1 + 4x_2 -x_1^2-x_2^2 + λ[Y-x_1 - x_2]
+\end{equation*}$
+"""
+
+# ╔═╡ 1a8fa906-87f9-4542-a1e2-9f4317890eaa
+begin #equations
+	U(x1,x2)= 4x1 + 4x2 -x1^2 - x2^2
+	Y_k(x1,x2) = x1+x2
+end;
+
+# ╔═╡ b4ebab38-d8cc-4e0f-8c3d-c2008d830fdb
+function consumer_kt(Y)
+
+    # Set up the numerical model
+    model = Model(Ipopt.Optimizer)
+
+    # Suppress solver output
+    set_silent(model)
+
+	# Register any functions in the model, including their number of arguments
+    register(model, :U, 2, U; autodiff = true)
+
+    # Specify the variables to be optimized over
+    @variable(model, x1)
+	@variable(model, x2)
+        
+    # Specify the objective function
+    @NLobjective(model, Max, U(x1,x2))
+
+    # Specify the constraints, in == or >= form
+    @NLconstraint(model, c1, Y-x1-x2 >= 0)
+        
+    # Pick starting values
+    set_start_value(x1, 2)
+	set_start_value(x2, 2)
+
+    # Find the solution
+    JuMP.optimize!(model)
+
+	# Return the solution
+	x1opt = round(value(x1), digits=2)
+	x2opt = round(value(x2), digits=2)
+	λopt = round(dual(c1), digits=2)
+
+	return x1opt, x2opt, λopt
+end;
+
+# ╔═╡ 99fd7df3-59fc-42bb-a4ff-9a781dd7003e
+begin #kt output
+	x1opt(Y)=consumer_kt(Y)[1]
+	x2opt(Y)=consumer_kt(Y)[2]
+	λ_opt_c(Y)=consumer_kt(Y)[3]
+end;
+
+# ╔═╡ 3a42bee6-0a64-4247-aeb6-bad2d7ffaf52
+x1vec = collect(range(-2,6,length=101));
+
+# ╔═╡ 0a8267c6-0984-4f9e-be2f-6e3596ce990b
+x2vec = copy(x1vec);
+
+# ╔═╡ 1bebb8d3-fe95-4caf-8c6a-eba11c082c77
+Y = @bind Y Slider(0.0:0.1:10.0, default=4.0, show_value=true)
+
+# ╔═╡ 762a4609-4782-4e39-ba44-95b4a141aa53
+function x2_hat(x1)
+
+# Define the zero condition at the parameter value supplied
+cond(x2) = Y - Y_k(x1,x2)
+
+# Specify a starting guess
+x20 = 1
+
+# Find and return the solution
+x2 = find_zero(cond, x20)
+
+end;
+
+# ╔═╡ 4f08043a-088d-4c91-bc97-6c36c4fb6e67
+begin
+    consumer_ktgraph = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(x1vec, x2_hat.(x1vec), linecolor=:black, linestyle=:solid, linewidth=2)
+	contour!(x1vec, x2vec, U, levels=(4:.5:10), 
+		linecolor=:gray, clabels=false)
+	contour!(x1vec, x2vec, U, levels=[U(x1opt(Y),x2opt(Y))], 
+		linecolor=:black, clabels=false)
+	
+    # Axis limits
+    xlims!(0, 6)
+    ylims!(0, 6)
+    
+    # Axis labels
+    annotate!(6.5, 0, text(L"x_1", :left, :center, 12))
+    annotate!(0, 6, text(L"x_2", :center, :bottom, 12))
+
+	# Key points, with dashed lines to them
+    plot!([x1opt(Y),x1opt(Y)], [0,x2opt(Y)], linecolor=:black, linestyle=:dash) 
+    plot!([0,x1opt(Y)], [x2opt(Y),x2opt(Y)], linecolor=:black, linestyle=:dash)
+    scatter!([x1opt(Y)], [x2opt(Y)], markercolor=:black, markersize=5)
+	
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(fxvec))
+    
+    # Axis labels
+    annotate!(1.071*xVec[end], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.212*maximum(fxvec), text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f0 ,fxvec], [L"0", L"f(0)", L"f(x^*)"])
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,fxvec], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [fxvec,fxvec], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [fxvec], markercolor=:black, markersize=5)
+    =#
+
+   consumer_ktgraph	
+end
+
 # ╔═╡ Cell order:
 # ╠═dc911456-cb92-11ef-2523-5198111e2809
 # ╠═e4c89af8-d12d-4508-bb0c-d2b75f482d4e
@@ -1201,3 +1363,13 @@ Here we have produced three of the exact same results using very different graph
 # ╟─8081bde3-cf3d-4b38-9b99-c166b23da40b
 # ╟─cce0885f-9157-4b3d-b34c-119c1a1ff327
 # ╟─e2688898-8c00-4f78-8628-4db549d96e68
+# ╟─f33b1ecb-4113-49c2-880b-73d0540ebb1e
+# ╟─3972b9fc-0282-45cf-9919-8d95e023d052
+# ╠═1a8fa906-87f9-4542-a1e2-9f4317890eaa
+# ╠═b4ebab38-d8cc-4e0f-8c3d-c2008d830fdb
+# ╠═99fd7df3-59fc-42bb-a4ff-9a781dd7003e
+# ╠═3a42bee6-0a64-4247-aeb6-bad2d7ffaf52
+# ╠═0a8267c6-0984-4f9e-be2f-6e3596ce990b
+# ╠═762a4609-4782-4e39-ba44-95b4a141aa53
+# ╠═1bebb8d3-fe95-4caf-8c6a-eba11c082c77
+# ╟─4f08043a-088d-4c91-bc97-6c36c4fb6e67
