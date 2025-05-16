@@ -1,17 +1,19 @@
 ### A Pluto.jl notebook ###
-# v0.19.46
+# v0.20.4
 
 using Markdown
 using InteractiveUtils
 
 # This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
 macro bind(def, element)
+    #! format: off
     quote
         local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
         local el = $(esc(element))
         global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
         el
     end
+    #! format: on
 end
 
 # ╔═╡ e4029728-c7a5-11ef-2f04-3731ad5737c2
@@ -316,11 +318,6 @@ $\begin{align*}
   \dfrac{dq^*}{dp} &= - \dfrac{1}{\underbrace{-w \cdot L''(q)} _{S.O.C}} > 0 \\
  \dfrac{dq^*}{dw} &= - \dfrac{\overbrace{-L'(q)}^{(-)}}{\underbrace{-w \cdot L''(q)} _{S.O.C}} < 0
 \end{align*}$
-"""
-
-# ╔═╡ 91687827-b6c8-4583-a16f-cce4424451b5
-md"""
-Further analysis in paper and Latex notes.
 """
 
 # ╔═╡ d50cc984-1fdc-4112-a4b6-961af9ee326c
@@ -1810,7 +1807,6 @@ end
 # ╟─d11bda3b-89c1-4c9d-97dd-e45bc6faa095
 # ╟─4e878a78-d4c4-43e1-963f-382fd7660b27
 # ╟─14ae1b31-b612-4972-a72a-e36aedc2fe21
-# ╟─91687827-b6c8-4583-a16f-cce4424451b5
 # ╟─d50cc984-1fdc-4112-a4b6-961af9ee326c
 # ╟─611a5bba-5199-4668-a678-e4fbd8651627
 # ╟─48e54957-9bf6-4a21-b2b1-ad695d60a625

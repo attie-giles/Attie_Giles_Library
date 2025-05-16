@@ -1,17 +1,19 @@
 ### A Pluto.jl notebook ###
-# v0.19.46
+# v0.20.4
 
 using Markdown
 using InteractiveUtils
 
 # This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
 macro bind(def, element)
+    #! format: off
     quote
         local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
         local el = $(esc(element))
         global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
         el
     end
+    #! format: on
 end
 
 # ╔═╡ 6ea3aef8-d04d-11ef-2482-53d8635a9a7a
@@ -1623,7 +1625,7 @@ The graph illustrates the First Fundamental Welfare Theorem, which states that c
 # ╠═8cad9c4b-ed95-4381-8ca6-b064c3f59349
 # ╠═e410a8ec-abe0-4bcc-8127-cd78cf9355fd
 # ╟─330bd158-571a-4de1-8100-dcb19b72a1a4
-# ╠═2260adb8-2666-488b-979b-fdc9112a5ee6
+# ╟─2260adb8-2666-488b-979b-fdc9112a5ee6
 # ╟─74032019-4c17-48ad-a5fa-e79d73787f27
 # ╠═7f6fad97-46b5-4c72-9387-3e5d6284e8a7
 # ╟─dd86f1b8-5e2c-4277-a275-a31f3ca25dec

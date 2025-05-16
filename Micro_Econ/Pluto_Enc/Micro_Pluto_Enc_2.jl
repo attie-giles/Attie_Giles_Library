@@ -1,17 +1,19 @@
 ### A Pluto.jl notebook ###
-# v0.19.46
+# v0.20.4
 
 using Markdown
 using InteractiveUtils
 
 # This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
 macro bind(def, element)
+    #! format: off
     quote
         local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
         local el = $(esc(element))
         global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
         el
     end
+    #! format: on
 end
 
 # ╔═╡ d703ad84-c20f-11ef-244e-ab1cddc07ff1
@@ -73,7 +75,7 @@ which can be used to define any variable in terms of the other four,
 $\begin{equation*}
   \hat{x}_2 = \hat{x}_2(I,p_1,p_2,x_1).
 \end{equation*}$
-We will know show the graphically.
+We will now show this graphically.
 """
 
 # ╔═╡ 4f4c12fb-e258-42ac-afab-b58cbfb65deb
@@ -181,7 +183,7 @@ where $α$ acts as an elsasticity of substitution parameter where the higher $α
 """
 
 # ╔═╡ 75580318-4f23-4c15-8614-d39c9892fd27
-k = @bind k Slider(0.0:1:20, default=5, show_value=true)
+k = @bind k Slider(1.0:1:20, default=5, show_value=true)
 
 # ╔═╡ f9056cd6-1a30-418e-9524-8ec2b52df675
 md"""
@@ -288,7 +290,7 @@ where the black lines represent different budget constraints where the more to t
 """
 
 # ╔═╡ 3af315b7-8392-474d-8922-4ce8b3c512e5
-α = @bind α confirm(Slider(0.0:0.1:1.0, default=0.5, show_value=true))
+α = @bind α confirm(Slider(0.1:0.1:.7, default=0.5, show_value=true))
 
 # ╔═╡ d9b600e8-e13c-4285-b57e-83d0ce9228c4
 begin
@@ -1683,7 +1685,7 @@ end
 # ╟─683a40d3-aae7-4f90-89c9-86fc9750f000
 # ╠═d9b600e8-e13c-4285-b57e-83d0ce9228c4
 # ╠═bf05fcb5-6f09-45b4-b705-603334cef8f3
-# ╟─75580318-4f23-4c15-8614-d39c9892fd27
+# ╠═75580318-4f23-4c15-8614-d39c9892fd27
 # ╟─f66d7212-f736-405b-9506-efebd7e2519c
 # ╟─f9056cd6-1a30-418e-9524-8ec2b52df675
 # ╟─cbbbcec6-bcfb-4625-8200-59a8b30c8f9f
@@ -1695,7 +1697,7 @@ end
 # ╠═e310112d-94c9-417f-b67e-e007108cb9e0
 # ╠═6ed2b882-7230-4b5a-b114-deb9aff08846
 # ╠═803fec4f-5998-4baf-b06b-08bc37b8f072
-# ╠═3af315b7-8392-474d-8922-4ce8b3c512e5
+# ╟─3af315b7-8392-474d-8922-4ce8b3c512e5
 # ╟─dc8cb167-5edd-4d05-be6b-8265678514f1
 # ╟─f0380574-ac39-4612-bfda-d927ae67139b
 # ╟─242dcd33-89cd-46d0-92f5-c9273e92bf52

@@ -1,17 +1,19 @@
 ### A Pluto.jl notebook ###
-# v0.19.46
+# v0.20.4
 
 using Markdown
 using InteractiveUtils
 
 # This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
 macro bind(def, element)
+    #! format: off
     quote
         local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
         local el = $(esc(element))
         global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
         el
     end
+    #! format: on
 end
 
 # ╔═╡ ad3e3348-c890-11ef-1507-9388ec0fab89
@@ -53,7 +55,7 @@ md"""
 
 # ╔═╡ f414370e-d3dc-4515-8c7f-298aff5ab761
 md"""
-Microeconomics can be understood as a system composed of both buyers and sellers in a market, where the buyers and the sellers are agents with assumed behaviors that evolve the state of the system over time. The set of assumed behaviors for both the buyers and sellers are as follows: buyers are agents preprogrammed with a set of indifference curves for items that are produced and then sold on a market that can be bought in combination according to both the preprogrammed sets of indifference curves and a budget constraint where the buyer seeks to optimize the amount of total utility given the indifference curves and budget constraint respectively. Sellers are preprogrammed to maximize the amount of profits for the goods that they produce and sell on the market. In a perfectly competitive market the parameters that influence both the revenues and costs for the producer is the price for the  commodity they are selling and the wage rate for the labor they are purchasing. For in a perfectly competitive market, both goods and labor these prices are set by the market and can be understood as given, similarly for the buyer whose income is a parameter that is said to be given. So the generalized set of behaviors for both the buyer and producer can be summarized mathematically as follows,
+Microeconomics can be understood as a system composed of both buyers and sellers in a market, where the buyers and the sellers are agents with assumed behaviors that effect and define the system. The set of assumed behaviors for both the buyers and sellers are as follows: buyers are agents preprogrammed with a set of indifference curves for items that are produced and then sold on a market that can be bought in combination according to both the preprogrammed sets of indifference curves and a budget constraint where the buyer seeks to optimize the amount of total utility given the indifference curves and budget constraint respectively. Sellers are preprogrammed to maximize the amount of profits for the goods that they produce and sell on the market. In a perfectly competitive market the parameters that influence both the revenues and costs for the producer is the price for the  commodity they are selling and the wage rate for the labor they are purchasing. For in a perfectly competitive market, both goods and labor these prices are set by the market and can be understood as given, similarly for the buyer whose income is a parameter that is said to be given. So the generalized set of behaviors for both the buyer and producer can be summarized mathematically as follows,
 
 $\begin{equation*}
   Q_D=D(p,Y)
@@ -92,7 +94,7 @@ $\begin{equation*}
 \end{equation*}$
 and they will give equivalent results. 
 
-For the following model we will make many simplifying assumptions because we are not trying to discover anything or reinvent the wheel but only to show the basics of how this works. We will assume that the consumer is a rational agent looking to maximize his level of utility, $k$, and does so by consuming goods on the market. The consumer has twoo goods to choose from and has to choose how much of each good to consume in order to maximize his utility. The consumer has a budget of $Y$ dollars and is looking to spend all his money on those two goods. His budget $Y$ is exogenous and not affected by anything in the system. Additionally, the two goods will have prices attached to each which are exogenously chosen.  
+For the following model we will make many simplifying assumptions because we are not trying to discover anything or reinvent the wheel but only to show the basics of how this works. We will assume that the consumer is a rational agent looking to maximize his level of utility, $k$, and does so by consuming goods on the market. The consumer has two goods to choose from and has to choose how much of each good to consume in order to maximize his utility. The consumer has a budget of $Y$ dollars and is looking to spend all his money on those two goods. His budget $Y$ is exogenous and not affected by anything in the system. Additionally, the two goods will have prices attached to each which are exogenously chosen.  
 
 In this model we will assume that there is a firm that produces both the goods and this firm is looking to maximize the level of profits for these goods. The firm sells these goods at their respective prices, but is constrained by the production of these goods which has a cost associated with it. To keep things simple we will assume that the only impact to production is the amount of hired labor and that the only cost to labor is the amount of wages the firm has to pay. The wage rate is exogenously chosen as well. 
 """
@@ -133,7 +135,7 @@ x1vec = collect(range(.1,25,length=200));
 Y_1 = @bind Y_1 Slider(100.0:10.0:300.0, default=120.0, show_value=true)
 
 # ╔═╡ 3ae04d3e-71c4-40c5-9c46-fc258acf499e
-α = @bind α confirm(Slider(0.0:0.1:1.0, default=0.5, show_value=true))
+α = @bind α confirm(Slider(0.1:0.1:.7, default=0.2, show_value=true))
 
 # ╔═╡ e54f8241-4f1a-4a46-a6a2-5ec3e929e89e
 begin #Consumer Equations
@@ -335,7 +337,7 @@ Here we sum the two demand curves together to get a total quantity demanded curv
 
 # ╔═╡ 8b1a943d-3f36-49ae-9317-98ff8a0a995b
 md"""
-This is th derivative of the total quantity demanded curve with respect to price, we see that for all values of price it is negative because it is downward sloping.
+This is the derivative of the total quantity demanded curve with respect to price, we see that for all values of price it is negative because it is downward sloping.
 """
 
 # ╔═╡ 7d87b441-f72a-4a25-854f-07fb715e14af
@@ -2990,7 +2992,7 @@ NLsolve essentially does what Find_zero can do in two steps. Instead of having t
 # ╠═57088f85-a4ed-46dd-8d97-8b89adb92b96
 # ╠═eabae7ae-0f30-4ac9-ba02-ddaacd289459
 # ╟─5231bce1-0a46-4fe5-94d5-8337e745b274
-# ╟─3ae04d3e-71c4-40c5-9c46-fc258acf499e
+# ╠═3ae04d3e-71c4-40c5-9c46-fc258acf499e
 # ╟─b5fd56fd-9f52-41d2-9f3c-90dc48e70fb4
 # ╟─23cd6788-da80-43cc-b741-fd1b5302e3a4
 # ╟─0f1cbf74-d3ee-440e-a8bd-c8429be8146d

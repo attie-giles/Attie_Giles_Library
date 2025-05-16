@@ -1,17 +1,19 @@
 ### A Pluto.jl notebook ###
-# v0.19.46
+# v0.20.4
 
 using Markdown
 using InteractiveUtils
 
 # This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
 macro bind(def, element)
+    #! format: off
     quote
         local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
         local el = $(esc(element))
         global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
         el
     end
+    #! format: on
 end
 
 # ╔═╡ 3c3a7fc4-c20f-11ef-0aa8-79f8621f6c7d
@@ -53,7 +55,7 @@ md"""
 
 # ╔═╡ df123947-5e98-44b2-9852-0a49c15b390c
 md"""
-Plotting in Pluto essentially comes down to two main features, specifying a vector for the x-axis and specififying a function to operate on that domain vector. Using that knowledge and the general tools of Pluto we can specify a production function $q(l)$. 
+Plotting in Pluto essentially comes down to two main features, specifying a vector for the x-axis and specifying a function to operate on that domain vector. Using that knowledge and the general tools of Pluto we can specify a production function $q(l)$. 
 """
 
 # ╔═╡ de0db303-aace-452b-8ddb-b6a21862d6e3
@@ -77,7 +79,7 @@ b_1 = @bind b_1 Slider(0.0:0.5:5.0, default=2, show_value=true)
 c_1 = @bind c_1 Slider(0.0:0.5:5.0, default=2, show_value=true)
 
 # ╔═╡ 682e8a03-e1e0-4f8e-8129-40d49fee06e3
-q_1(l) = a_1 + b_1*l + .5*c_1*l^2 #This is our production function, where because we wil probably use these variable representations again we need to give them subscripts because pluto notebooks cannot handle multiple variables of the same name. ;
+q_1(l) = a_1 + b_1*l + .5*c_1*l^2; #This is our production function, where because we wil probably use these variable representations again we need to give them subscripts because pluto notebooks cannot handle multiple variables of the same name. 
 
 # ╔═╡ 02e6b1d1-9a11-4efe-964f-56932f4bf0d9
 md"""
@@ -213,7 +215,7 @@ end
 
 # ╔═╡ 92a15fc5-ba1a-481e-b81a-184d2c849999
 md"""
-Both the quadratic function and the exponential function have the characteristic of being constantly increasing and going to ∞ as l goes to ∞. An example of a function that doesn't is a **logistic equation** that we will specify below. 
+Both the quadratic function and the exponential function have the characteristic of being constantly increasing and going to ∞ as $l$ goes to ∞. An example of a function that doesn't is a **logistic equation** that we will specify below. 
 """
 
 # ╔═╡ 876e8681-df7f-4791-81cc-260f65dbfb01
@@ -1715,8 +1717,8 @@ begin
     annotate!(0, 1.01*ylims(demandqunatitygiven)[2], text(L"P", :center, :bottom, 12))
 
 	 # Axis ticks
-    xticks!([0.001, Qt], [L"0", L"Q^*"])
-    yticks!([0.001, qd_qt(p_1vec) ], [L"0", L"P^*"])
+    xticks!([0.001, Qt], [L"0", L"Q_t"])
+    yticks!([0.001, qd_qt(p_1vec) ], [L"0", L"P_t"])
     #=
     # Axis limits
     xlims!(0, 1.05*xVec[end])
@@ -1746,7 +1748,7 @@ end
 
 # ╔═╡ 8636e6b3-15e1-4139-88ef-71b45e3224f1
 md"""
-We can see from the above graph that $Q^*$ represents $Qt$ and $p^*$ represents the corresponding price that generates from that quantity demanded. Find_zero will be a useful tools when trying to calculate equilibrium of different values.
+Find_zero will be a useful tools when trying to calculate equilibrium of different values.
 """
 
 # ╔═╡ 71ff2a3b-ba9a-4d45-8b80-2101d22e0e64
@@ -3086,11 +3088,11 @@ This concludes the full analysis for the perfectly competitive firm problem.
 # ╟─962e2aba-7f77-46b7-808c-16840460eda9
 # ╟─9e930004-74cb-4bbe-8025-daed2466e8d5
 # ╟─824d67fe-cd19-4df8-a374-38faf8d8ecb0
-# ╠═e4a8b11d-cab6-4e1a-948f-2b91ea6e5eb4
+# ╟─e4a8b11d-cab6-4e1a-948f-2b91ea6e5eb4
 # ╠═2d317809-b12b-4bf2-b6b7-8069309ba954
 # ╠═1e0bfd42-81b7-4de0-9e40-cc9a48b84355
 # ╟─c730f8d5-dfea-48d8-ba80-8b08866a5a35
-# ╠═5b9ca874-d6f3-4712-8c45-c9df3cf65396
+# ╟─5b9ca874-d6f3-4712-8c45-c9df3cf65396
 # ╠═45203b71-62e0-41d6-ac9d-d3c44ce38afd
 # ╠═1b4f1470-2551-4978-bf70-3f57e33b7cab
 # ╟─1f41f7bb-9140-4bac-991e-f3ce210b61bf
@@ -3125,7 +3127,7 @@ This concludes the full analysis for the perfectly competitive firm problem.
 # ╟─1c235801-141b-4852-aeae-81d89bd5d823
 # ╠═fe7220ae-af14-416c-b8b8-fe8a523bb517
 # ╟─c28a7413-03a8-4352-8dfc-7cb0defa4961
-# ╠═1eb3e454-e15a-4e3b-9f14-18b03e81dbbd
+# ╟─1eb3e454-e15a-4e3b-9f14-18b03e81dbbd
 # ╟─1ec3205d-18b1-416c-9c76-28e4db1f17de
 # ╟─600c8bd0-95ca-4402-9647-48261db2090f
 # ╠═4905ddf1-f3a1-49dc-a8e5-2d8767465add
