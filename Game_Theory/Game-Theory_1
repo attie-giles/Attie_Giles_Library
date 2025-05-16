@@ -1,0 +1,1756 @@
+### A Pluto.jl notebook ###
+# v0.20.4
+
+using Markdown
+using InteractiveUtils
+
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    #! format: off
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+    #! format: on
+end
+
+# ╔═╡ b953ea68-e3cf-11ef-1b30-5f45119d6329
+begin  
+    import Pkg   
+    Pkg.activate()  
+    
+	using JuMP      # set up a model
+	using Ipopt     # find a max or min
+	using Roots    # solve a single equation
+	using NLsolve  # solve multiple equations
+	#using ForwardDiff # differentiate a function
+	using Integrals
+	#using QuadGK   # integrate a function
+    #using DynamicalSystems #dynamical systems
+    #using DifferentialEquations  
+    #using Compiler
+    #using Flux
+    #using Turing  
+	using Plots     # plot graphs
+	using PlutoUI   # use sliders, etc., in Pluto
+	using LaTeXStrings # use LaTeX in graphs
+        #using Printf #allows you to use sprintf
+end
+
+
+# ╔═╡ 7707e235-b8f0-4a9f-be1a-cbbe45275d85
+PlutoUI.TableOfContents(title="Sections", indent=true, depth=4,aside=true)
+
+# ╔═╡ 1d317fab-514c-45ab-87be-f8ebc76b936e
+md"""
+# Game Theory
+"""
+
+# ╔═╡ 7fe37d56-f327-4031-9624-55b8b1605f17
+md"""
+"Probability is the most important concept in modern science, especially as nobody has the slightest notion what it means"
+
+-Bertrand Russell
+"""
+
+# ╔═╡ 6fe23858-f45e-4404-87f2-364e21d2a8f2
+md"""
+## Probability Theory
+"""
+
+# ╔═╡ 3a385ee9-8bae-42eb-a00a-211b20d3ff32
+md"""
+random variable: a variable depends on "chance"
+
+1. Discrete random variable: a tossed fair coin has outcome of either heads (H) or tails (H). $Pr(H)=Pr(T)=1/2$, a rolled fair dies has outcome $Pr(i)=1/6, \; i=\{1,2,3,4,5,6 \}$.
+
+2. Continuous Random Variable: temperature in Denver tomorrow ccan range from any real number between 20 and 60 with some values more likely than others. 
+
+Probability distribution: a functin $f(x)$ describing relative frequency of potential outcomes that can be realized by a random variable $x$. 
+
+Sample Space of the Distribution: set of possible outcomes. For continuous dsitributions sometimes called the support of the distribution.
+"""
+
+# ╔═╡ 23fe0dae-d3eb-466e-9b0c-ec80b1bc3346
+md"""
+Cumulative Distribution Function: a real-valued function $F$ into the unit interval, CDF. A CDF describbes the probability realized value of $x$ that is $\leq$ a specified value  $x_0:F(x_0) = Pr(x < x_0)$.
+
+Any CDF F satisfies the following properties:
+
+1. if $x_2 > x_1 \rightarrow F(x_2) \geq F(x_1)$
+
+2. $F(- \infty)=0, F(\infty)=1$
+
+3. If the support of a continuous pdf f is $S=[\underline{x},\overline{x}]$ then $F(\underline{x})=0, \; F(\overline{x})=1$
+
+4. The CDF F can calculated as 
+
+$\begin{align*}
+\text{for a discrete pdf f}: \; F(x) &= \Sigma_{y \leq x}f(y) \\
+\text{for a continuous pdf f:} \; F(x) &= \int^x_{- \infty} f(y)dy
+\end{align*}$
+ 4. The fundamental theorem of calculus then tells us $f = F'$.
+"""
+
+# ╔═╡ 34266106-29da-4bd2-8f3d-103d6bd68789
+md"""
+Example 1: Discrete pdf. 
+
+6-sided die example 
+
+$\begin{equation*}
+F(4)=F(4.9)=2/3, \text{since either case corresponds to {1,2,3,4}}
+\end{equation*}$
+
+"""
+
+# ╔═╡ 18e75ba1-35c1-46cc-af06-0387a96b1b5a
+begin
+    ex1 = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+
+	for n=1:1:5
+    # Key points, with dashed lines to them
+    plot!([n,n+1], [n/6,n/6], linecolor=:black, linestyle=:solid)
+    scatter!([n+1], [n/6], markercolor=:white, markersize=5)
+	 scatter!([n], [n/6], markercolor=:black, markersize=5)
+	end
+	# Key points, with dashed lines to them
+    plot!([6,8], [6/6,6/6], linecolor=:black, linestyle=:solid)
+	 scatter!([6], [6/6], markercolor=:black, markersize=5)
+	
+
+	# Axis limits
+    xlims!(-1, 8)
+    ylims!(0, 1.2)
+    
+    # Axis labels
+    annotate!(8.2, 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.2, text(L"F(x)", :center, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(fxvec))
+    
+    # Axis labels
+    annotate!(1.071*xVec[end], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.212*maximum(fxvec), text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f0 ,fxvec], [L"0", L"f(0)", L"f(x^*)"])
+
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,fxvec], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [fxvec,fxvec], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [fxvec], markercolor=:black, markersize=5)
+    =#
+
+
+   ex1	
+end
+
+
+# ╔═╡ a1a3147d-6523-4ee1-bf5c-fe5cd2509fc0
+md"""
+Example 2: continuous pdf
+
+Uniform distribution on $[1,6]$
+
+f(x) = .2 for $x \in [1,6];0 \; \text{elsewhere}$
+
+F(x) = x/5 for $x \in [1,6];0 \; \text{for} \; x \leq 1, 1 \; \text{for} \; x \geq 6$
+"""
+
+# ╔═╡ ed03654d-bce0-4ac5-9a44-5136e21538f5
+function continuous_pdf1(x)
+	F=0
+	if x < 1
+		F=0
+	elseif 1 <= x <= 6
+		F=(x-1)/5
+	else F =1
+	end
+	return F
+		
+end;
+
+# ╔═╡ 7a363aa8-3790-4432-b55c-7465168abc5f
+xvec = collect(range(0,10,length=100))
+
+# ╔═╡ f83716b5-38f3-4f76-a09a-27b549f8e295
+begin
+    ex2 = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(xvec, continuous_pdf1.(xvec), linecolor=:black, linestyle=:solid, linewidth=2)
+
+	# Axis limits
+    xlims!(-1, 8)
+    ylims!(0, 1.2)
+    
+    # Axis labels
+    annotate!(8.2, 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.2, text(L"F(x)", :center, :bottom, 12))
+
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(fxvec))
+    
+    # Axis labels
+    annotate!(1.071*xVec[end], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.212*maximum(fxvec), text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f0 ,fxvec], [L"0", L"f(0)", L"f(x^*)"])
+
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,fxvec], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [fxvec,fxvec], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [fxvec], markercolor=:black, markersize=5)
+    =#
+
+
+   ex2	
+end
+
+
+# ╔═╡ c5111caf-f0b5-429e-b436-8f08b5b96001
+md"""
+Independence:
+
+For two events A, B let
+
+$A \cap B$: represent the itersection (both A and B are true)
+
+$A \cup B$ represent the union (either A or B are true)
+
+Two events A and B are independent if and only if 
+
+$\begin{equation*}
+Pr(A \cap B) = Pr(A)Pr(B)
+\end{equation*}$
+because the probability of the intersection of two events A and B is a measure of the liklihood that both events are simultaneaously occurring
+
+$\begin{equation*}
+Pr(A \cap B)=Pr(A)Pr(B|A)
+\end{equation*}$
+where if A and Be are independent then 
+
+$\begin{equation*}
+Pr(B|A)=Pr(B).
+\end{equation*}$
+Example: A="die shows even" and B="coin shows H". The outcome of rolled coind don't depend on one another so each of the four outcomes $A \cap B, \; \neg A \cap B, \; A \cap \neg B, \; \neg A \cap \neg B$ is equally likely, where $\neg Z$ means "not Z". Hence $Pr(A \cup B)= \dfrac{1}{4}$. Also, $Pr(A)=Pr(2,4,6)=1/6+1/6+1/6=1/2$ and $Pr(B)=1/2$, this $Pr(A \cap B)=Pr(A)Pr(B)=1/4$ implying A and B independent. 
+
+Notice also that the joint probability (either A or B occurs) is $Pr(A \cup B)=Pr(A)+Pr(B)-Pr(A \cap B)$. The marginal probability is $Pr(A)=Pr(A \cap B)+Pr(A \cup \neg B)$
+
+"""
+
+# ╔═╡ 36250445-482f-463f-811b-09e5134e27f6
+md"""
+## Expected Value
+"""
+
+# ╔═╡ 0d531899-c6fb-495a-a7ac-c25e38967a1c
+md"""
+Define the expected value $E(x)$ as the probability-weighted average of all the possible values that can be realized. For a discrete random value $f(x)$ over the set $\{x_1, \cdots, x_n\}$ this is
+
+$\begin{equation*}
+E(x) = \Sigma^n_{i=1}f(x_i)
+\end{equation*}$
+for a continuous random variable $f(x)$ with support $[\underline{x}, \overline{x}]$ this is 
+
+$\begin{equation*}
+E(x)=\int^{\infty}_{-\infty}xf(x)dx=\int^{\overline{x}}_{\underline{x}}xf(x)dx
+\end{equation*}$
+
+Example: mean for uniform pdf on $[a,b] \; f(x)=\dfrac{1}{b-a}$ for $x \in [a,b]$
+
+$\begin{equation*}
+E(x)=\int^b_a x \dfrac{1}{b-a}dx = \dfrac{x^2}{2(b-a)}|^b_a= \dfrac{b^2-a^2}{2(b-a)}=\dfrac{a+b}{2}
+\end{equation*}$
+
+"""
+
+# ╔═╡ 1f9156dd-2a4a-46d7-ad21-8fb5cd3fb168
+begin #parameters
+	a = 2
+	b = 20
+end;
+
+# ╔═╡ 46eef95e-ee38-4f5d-825a-b6efd6abb8bb
+begin
+	E(x, p) = x .* (1 ./ (b .- a))  
+	domain = (a,b)
+	prob = IntegralProblem(E, domain)
+	sol = solve(prob, HCubatureJL(); reltol = 1e-3, abstol = 1e-3)
+	sol.u
+end
+
+# ╔═╡ 443e9863-517d-4dc1-91c4-604d53ce6112
+md"""
+## Moments
+"""
+
+# ╔═╡ ef9dae12-aeef-4183-bba7-57dc7100ead8
+md"""
+In mathematics, the moments of a function are certain quantitative measures related to the shape of the function's graph. If the function represents mass density, then the zeroth moment is the total mass, the first moment (normalized by total mass) is the center of mass, and the second moment is the moment of inertia. If the function is a probability distribution, then the first moment is the expected value, the second central moment is the variance, the third standardized moment is the skewness, and the fourth standardized moment is the kurtosis. 
+
+We define the $k^{th}$ order moment for a continuous distribution $f(x)$ as 
+
+$\begin{equation*}
+\int^\infty_{- \infty} (x-E(x))^kf(x)dx
+\end{equation*}$
+most commonly used are variance $k=2$, skewness $k=3$, and kurtosis $k=4$.
+
+Example: Variance for the uniform pdf on $[a,b]$. The function is going to be $f(x)=\dfrac{1}{b-a}$ where we found the expected value above.
+
+$\begin{align*}
+V(x) &= \int^b_a[x-\dfrac{a+b}{2}]^2 \dfrac{1}{b-a}dx \\
+&= \int^b_a [x^2 - (a+b)x + \dfrac{(a+b)^2}{4}]\dfrac{1}{b-a}dx \\
+&= \dfrac{b^3-a^3}{3(b-a)}- \dfrac{(a+b)^2}{2}+\dfrac{(a+b)^2}{4} \\
+&= \dfrac{b^2+ab+a^2}{3} - \dfrac{a^2+2ab+b^2}{4} \\
+&= \dfrac{(b-a)^2}{12}
+\end{align*}$
+
+"""
+
+# ╔═╡ 2969d270-758d-43a4-9604-6ce4805b4d74
+md"""
+Additionally we could rewrite the variance equation using the equation for Expected value of x as
+
+$\begin{equation*}
+\int^\infty_{- \infty} (x-\int^{\infty}_{-\infty}xf(x)dx)^kf(x)dx
+\end{equation*}$
+"""
+
+# ╔═╡ 9d00583a-f08c-4709-b49a-ff1089d80017
+begin
+	V(x, p) = (x .- (a .+ b) ./ 2).^2 .* (1. / (b .- a))
+end;
+
+# ╔═╡ 68e4a4ed-6505-4ba1-ad08-14f3ddd8c3bc
+md"""
+## Other Elements
+"""
+
+# ╔═╡ e484bdeb-1fca-4b83-b309-3776bd5eaf05
+md"""
+The mean gives information on "central tendency" of a pdf. Other statistics do so too like median and mode. Symmetric pdfs are of some importance in that 
+
+$\begin{equation*}
+Pr(y - E(x)) = Pr(y + E(x))
+\end{equation*}$
+ for any symmetric pdf all three of measures of central tendency coincide. A pdf that not symmetric can be called asymmetrics and such a pdf has nonzero skewness. 
+"""
+
+# ╔═╡ b757817c-474e-48c3-9624-0cb0e502bde9
+md"""
+## Choices Under Uncertainty
+"""
+
+# ╔═╡ 69ef72e0-933e-4e7b-a78d-babe8d8b3db9
+md"""
+The Logical Roots of game theory are in Bayesian Decision Theory. Any "rational" decision-makers behavior shoyuld be describable by a utility function which gives a quantitative charecterization of a players preferences for outcomes or prizes, and a subjective probability distribution, which characterize his beliefs about all relevant unknown factors. Decisions under uncertainty are commonly described by one of two models: a probability model or a state-variable model. In each case we speak of the decision-maker as choosing among lotteries, but the two models differ in how a lottery is defined. In a probability model, lotteries are probability distributions over a set of prizes. In a state-variable model lotteries are functions from a set of possible states into a set of prizes. A probability model is appropriate for describing gambles in which the prizes will depend on events that have obvious objective probabilities; we refer to these as objective unknowns. Events which do not have objective probabilities; the result of a future sports event or the course of the stock market are good examples. These are called subjective probabilities. These are more readily described in a state-variable model because these models allow us to describe how the prize will be determined by the unpredictable events without our having to specify any probabilities for these events. 
+"""
+
+# ╔═╡ 44841e6e-5a96-49d0-b634-94f429d31a2c
+md"""
+For Chuck's class we are dealing with Objective unknowns and I will be using his notation. 
+"""
+
+# ╔═╡ 2b5e38f7-ab6c-4b0c-af34-3e71d0612399
+md"""
+Formal Setup:
+
+There is a set of "prizes" or "outcomes", $X$ with elements $x$,
+
+$\begin{equation*}
+x \in X.
+\end{equation*}$
+We can define a simple probability distributions p over X by 
+
+1. a finite subset of $X$, called the "support" of p, supp(p)
+
+2. a number p(x) > 0 for each prize $x \in supp(p)$ the probability of getting x, with $\Sigma_{x\in supp(p)} p(x) =1$
+
+the set of all simple probaility distribution on $X$ is $P$ with elements are called p known as lotteries or gambles. The special lotteryv that gives some prize $x$ with certain is written $\delta_x$. 
+
+Example: prizes are combinations of apple slices $(x_1)$, ham sandwhiches $(x_2)$, and ounces of milk $(x_3) \cdots$ a schoolchild's lunch. Then $X= R^3_+$ and $x=(x_1,x_2,x_3)$. Suppose the support is ${(3,\dfrac{1}{3},4),(5,\dfrac{2}{3},3)} \equiv \{X^a,X^b \}$ with $p(X^a)=3/8, p(X^b)=5/8$. 
+
+We model uncertainty by posing problems as distributions on vectors, as opped to vectors of probaility distributions. For teh last example the odds for each prize can be modeled as 
+
+$\begin{equation*}
+\{(3: 3/8, 5:5/8), (1/3:3/8, 2/3:5/8), (4: 3/8, 3: 5/8) \}.
+\end{equation*}$
+Note that finite support rules out unbounded distributions, example: indefinite double-or-nothing bets. Finite support also rules out continuous distributions. 
+ """
+
+# ╔═╡ 29c22607-8c76-4966-a287-4f8fb31bd663
+md"""
+## Probability Mixtures
+"""
+
+# ╔═╡ c3db0104-0bc6-4f18-8810-73be98a1ae03
+md"""
+let $\alpha \in [0,1],$ and $p,q \in P$ we can define $\pi = \alpha p + (1-\alpha)q$
+this means that 
+
+1. $supp(\pi)=supp(p) \cup supp(q)$: any prize x with positive probability under either $p$ or $q$ has positive probability under $\pi$.
+
+2. $\pi(x) = \alpha p(x) + (1-\alpha)q(x)$, where $x \notin supp(p) \rightarrow p(x)=0$ and $x \notin supp(q) \rightarrow q(x)=0$
+
+
+"""
+
+# ╔═╡ 9c856d85-2280-4882-bec5-1e7b751a3d31
+md"""
+## Expected Utility
+"""
+
+# ╔═╡ 4b9dea00-6476-4e14-a416-7415d875bafc
+md"""
+We can evaluate a gamble using expected utility $EU= \Sigma_i p_iu(w_i)$ where $p_i= \text{probability of outcome i with wealth} \; w_i$. 
+"""
+
+# ╔═╡ 2d5b8152-ab44-4f95-a380-aab886843041
+md"""
+Von Neumann - Morgenstein Axioms
+
+A1: Transitivity
+
+1. for $p,q$ with $p \succ q$ then $q \nsucc p$
+
+2. For any lotteries $p,q,r$ with $p \succ p$ then $p \succ r$ or $r \succ q$ or both
+
+A1 implies there is no lottery z that is preffered to itself, a chain of preference relations $p \succ q \succ r$ must imply $p \succ r$, and that $p^1 \succ p^2 \succ p^2 \cdots p^n \rightarrow p^1 \succ p^n$.
+
+A2: Substitution axiom: for any lotteries $p,q,r$ with $p \succ q$ and $\alpha \in (0,1)$ ;
+
+$\begin{equation*}
+\alpha p + (1-\alpha)r \succ \alpha q + (1- \alpha)r
+\end{equation*}$
+A3: Archimedean Axiom: If 3 lotteries $p,q,r$ have $p \succ q \succ r$ then there are $\alpha, \beta \in (0,1)$ subject to 
+
+$\begin{equation*}
+\alpha p + (1-\alpha)r \succ q \succ \beta p + (1-\beta)r
+\end{equation*}$
+The Expected Utility Theorem: A preference relation $\succ$on $P$ over $X$ satisfies axioms A1, A2, and A3 iff there is a function $u:X \rightarrow R$ with 
+
+$\begin{equation*}
+p \succ q \Leftrightarrow\quad \Sigma_{x \in supp(p)}u(x)p(x) > \Sigma_{x \in supp(q)}u(x)q(x)
+\end{equation*}$
+In addition $v = au + b$ works as well for any $a,b>0$ (u is unique only up to affien transformation). A preference relation satisfying the VNM axioms has an expected utility representation. We also have a numerical representation for preferences 
+
+$\begin{equation*}
+U(p) \equiv \Sigma_{x \in supp(p)}u(x)p(x)
+\end{equation*}$
+where $U(p)$ is linear in the probabilities.
+
+Will prove later
+"""
+
+# ╔═╡ 4f21746f-b8c3-44cf-bf13-660c8b0eb079
+md"""
+## Money
+"""
+
+# ╔═╡ 671975ac-c4c2-4254-b36b-ffb88ecb6b19
+md"""
+Suppose that the prizes are cash money. For any two prices $x,y \in X:$
+
+$\begin{align*}
+\delta_x \sim u(x) \delta_b + [1-u(x)]\delta_w \\
+\delta_y \sim u(y) \delta_b + [1-u(y)]\delta_w
+\end{align*}$
+if $x > y$ we would expect $\delta_x \succ \delta_y \Leftrightarrow u(x) > u(y)$ so $u'>0$. Now think of 3 prizes $x, x + \Delta, x = 2 \Delta$ 
+
+$\begin{equation*}
+u(x + 2 \Delta) - u(x + \Delta) \gtreqless u(x + \Delta)- u(x)
+\end{equation*}$
+this turns on the concavity of $u$.
+
+We define the expected value of lottery p:
+
+$\begin{equation*}
+E_p = \Sigma_{x_i \in supp(p)} x_ip(x_i) \equiv \overline{x}
+\end{equation*}$
+if $\delta_{\overline{x}} \succeq p$ then u is weakly concave.
+
+Illustration
+
+Suppose the probabilities of $x, x + \Delta. x + 2 \Delta$ are $\dfrac{\gamma}{2}, 1-\gamma, \dfrac{\gamma}{2}$ then 
+
+$\begin{equation*}
+\overline{x}=  \dfrac{\gamma}{2}x + (1- \gamma)(x+ \Delta) + \dfrac{\gamma}{2}x(x+2 \Delta)= x + \Delta
+\end{equation*}$
+the lottery $p$ is values as $u(x)\dfrac{\gamma}{2} + u(x+ \Delta)(1-\gamma) + u(x + 2 \Delta)\dfrac{\gamma}{2}$. The lottery $\delta_{\overline{x}} $is values by $u(x = \Delta)$. By the Expected Utility Theorem
+
+$\begin{align*}
+\delta_{\overline{x}} \succeq p &\Leftrightarrow u(x + \Delta) \geq (1-\gamma)u(x+\Delta) + \dfrac{\gamma}{2}[u(x) + u(x+2 \gamma)] \\
+& \Leftrightarrow 0 \geq \dfrac{\gamma}{2} \{u(x+2 \Delta) - u(x+ \Delta)-[u(x+\Delta) - u(x)]\}
+\end{align*}$
+i.e. if u is concave.
+"""
+
+# ╔═╡ b885badd-41be-4603-9803-9812784b6c22
+md"""
+## Attitudes towards risk
+"""
+
+# ╔═╡ 52986749-1048-4513-8de6-6c570fceefe1
+md"""
+A concanve $u$ implies the agent prefers the lottery paying the mean $(x + \Delta)$ to the lottery itself. Such an agent is risk averse. An agent with $p \sim \delta_{\underline{x}}$ for any lottery p is risk neutral. Such an agent must have
+
+$\begin{equation*}
+0 = \dfrac{\gamma}{2} \{u(x+2 \Delta) - u(x+ \Delta)-[u(x+\Delta) - u(x)]\}
+\end{equation*}$
+As this is true for any gamble, u must be linear for a rsik-neutral agent. If the agent is risk-averse, there is a prize $x_c$ - the certainty equivalent - with $\delta_{\underline{x}} \sim p$. We call $R(p)=E_p-x_c$ the risk premium for the lottry p. 
+"""
+
+# ╔═╡ 327b7beb-6398-4c23-88b5-7e0ba2e14453
+md"""
+## Two Ways to Measure Risk
+"""
+
+# ╔═╡ f5b1cbbf-92f0-4514-908d-548da32f258d
+md"""
+1. Absolute risk aversion: coefficient of absolute risk-aversion: $\lambda(x)=-u''(x)/u'(x)$. Constant absolute risk aversion: $\lambda$ is a constant. This implies that $u(x) = u_0 + u_1e^{-\lambda x}$. Agent A is at least as risk averse as agent B if, for any lottery p and prize $\hat{x}$: if $p \succ_A \hat{x}$ then $p \succ_B \hat{x}$. Equivalently, $\lambda_A(x) \geq \lambda_B(x)$ for all x. 
+
+2. Relative risk risk aversion: coefficient of relative risk aversion: $\mu(x) = -xu''(x)/u'(x)$. Constant relative risk aversion is equivalent to $\mu(x)$ being constant. This implies that $u(x) = u_o + u_1x^{(1- \mu)}$. Note that $\mu(x)=x \lambda(x)$. Constant relative risk aversion implies decreasing absolute risk averison.
+"""
+
+# ╔═╡ d83ed239-8b8c-4505-9c50-3441f15bca63
+md"""
+## Graphing VNM utility function
+"""
+
+# ╔═╡ d2b9865b-ca63-4980-88f9-efb3e771cff2
+md"""
+Write down the maximum you would pay to play each of the following gambles.
+"""
+
+# ╔═╡ 56a9c4e6-ae91-4195-8c47-499fe2876535
+md"""
+50/50 gamble for \$1 or \$5. This bet has an expected value of \$3
+"""
+
+# ╔═╡ 4157a4be-d98b-47ed-9a62-6f98360b6eac
+gamble1 = @bind gamble1 Slider(0.0:0.01:5, default=2.0, show_value=true)
+
+# ╔═╡ 04df3120-4e78-4cdd-8c62-3af50648e708
+md"""
+25% chance of \$1 or 75% chance of \$5. This bet has an expected value of \$4
+"""
+
+# ╔═╡ 6992f994-8bbb-46be-8907-7030b9e76f23
+gamble2 = @bind gamble2 Slider(0.0:0.01:5, default=3.0, show_value=true)
+
+# ╔═╡ 1469ac06-fbc7-4a31-873a-48a0bd473d7f
+md"""
+75% chance of \$1 or 25% \$5. This bet has an expected value of \$2
+"""
+
+# ╔═╡ 275ef211-4b3b-428f-92b8-8784f5988b32
+gamble3 = @bind gamble3 Slider(0.0:0.01:5, default=1.5, show_value=true)
+
+# ╔═╡ 82b93723-e4df-4253-8cc6-b6e2b0505e83
+dollarvec = collect(range(0,5,length=101))
+
+# ╔═╡ 74690f25-14f0-4978-8182-9bd19189ef4d
+begin
+    gamble = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(dollarvec, dollarvec, linecolor=:black, linestyle=:solid, linewidth=2)
+
+	# Axis limits
+    xlims!(0, 1.05*dollarvec[end])
+    ylims!(0, 1.2*maximum(dollarvec))
+    
+    # Axis labels
+    annotate!(1.071*dollarvec[end], 0, text(L"$", :left, :center, 12))
+    annotate!(0, 1.212*maximum(dollarvec), text(L"U", :center, :bottom, 12))
+	for n=1:5
+	# Key points, with dashed lines to them
+    plot!([n,n], [0,n], linecolor=:black, linestyle=:dash) 
+    plot!([0,n], [n,n], linecolor=:black, linestyle=:dash)
+    scatter!([n], [n], markercolor=:black, markersize=5)
+	end
+
+	plot!([gamble2,5], [4,5], linecolor=:black, linestyle=:solid)
+	#Expected value of 3 bet
+	plot!([gamble1,gamble2], [3,4], linecolor=:black, linestyle=:solid) 
+	 plot!([gamble1,gamble1], [0,3], linecolor=:black, linestyle=:dash)
+	scatter!([gamble1], [3], markercolor=:black, markersize=5)
+
+	#Expected value of 4 bet
+	plot!([gamble3,gamble1], [2,3], linecolor=:black, linestyle=:solid) 
+	 plot!([gamble2,gamble2], [0,4], linecolor=:black, linestyle=:dash)
+	scatter!([gamble2], [4], markercolor=:black, markersize=5)
+
+	#Expected value of 2 bet
+	plot!([1,gamble3], [1,2], linecolor=:black, linestyle=:solid) 
+	 plot!([gamble3,gamble3], [0,2], linecolor=:black, linestyle=:dash)
+	scatter!([gamble3], [2], markercolor=:black, markersize=5)
+
+	# Axis ticks
+    xticks!([0.001, 1, 2, 3, 4 ,5, gamble1, gamble2, gamble3], [L"0", L"$1", L"$2", L"$3", L"$4", L"$5", L"x_3", L"x_4", L"x_2"])
+    yticks!([0.001, 1, 2, 3, 4 ,5], [L"0", L"U(1)", L"U(2)", L"U(3)", L"U(4)", L"U(5)"])
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(fxvec))
+    
+    # Axis labels
+    annotate!(1.071*xVec[end], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.212*maximum(fxvec), text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f0 ,fxvec], [L"0", L"f(0)", L"f(x^*)"])
+
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,fxvec], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [fxvec,fxvec], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [fxvec], markercolor=:black, markersize=5)
+    =#
+
+
+   gamble	
+end
+
+
+# ╔═╡ 146f2f79-a6f9-4316-bd44-e2cf48dac5df
+md"""
+The above graph compares the risk preferences for a person that is playing the game compared to a perfectly risk neutral person. The above answers were my preferences where we see that the slope for these bets is concave implying that I am risk averse
+"""
+
+# ╔═╡ 7de4cbf3-cc93-41bd-afe7-ab2d2e49564b
+md"""
+## Relative Risk Aversion and Wealth
+"""
+
+# ╔═╡ a3df84a2-df85-4b6b-a71b-8c35742addbe
+md"""
+Consider a gamble where you bet half your wealth, $W$, and the payoff is the lottery $p(x): x = \theta W, \theta \in (0, \infty)$ $\theta$ is the rate of return. Let $\hat{\theta}$ be the value such that $\delta_{\hat{\theta}W} \sim p$ which means you are indifferent to playing the gamble or takign $\hat{\theta} W$ for sure. Here $\hat{\theta}$ is the certainty rate of return, or $CRR(p ; x)$.
+"""
+
+# ╔═╡ ccf97f2f-7db4-464d-8ae1-38fa1357fc1c
+md"""
+## Comparing Riskiness of Lotteries
+"""
+
+# ╔═╡ 5f50ddbd-2b36-436c-a9ae-7451d83549dc
+md"""
+Consider two lotteries p and q 
+
+$\begin{align*}
+p:& 10(prob= \dfrac{1}{2}); - 10(prob=\dfrac{1}{2}) \\
+q:& 10(prob= \dfrac{1}{4}); 0(prob= \dfrac{1}{2}); - 10(prob=\dfrac{1}{4})
+\end{align*}$
+both lotteries have the expected value of \$0. But p has less weight in the middle and more in the tails. We say as transformation that leaves the mean unalthered but pushes weight away from the mean is a mean-preserving spread.
+
+Mean-Preserving Spreads
+
+Let p be a lottery, s a mean-preserving spread and $q=p+s$. Suppose all three are defined on the unit interval. For s to be a mean preserving spread, we need $\int^1_0xs(x)dx=0$ so that
+
+$\begin{align*}
+E_q = \int^1_0 xq(x)dx &= \int^1_0 x[p(x)+s(x)]dx \\ 
+&= \int^1_0 xp(x) dx+ \int^1_0x s(x) dx \\
+&= \int^1_0 xp(x) dx \\
+&= E_p.
+\end{align*}$
+Define the cumulative value of $s$ as $S(x) = \int^x_0s(u)du$. By construction, $S(1)=S(0)=0$. Now define $T(y) = \int^y_0S(x)dx$ and note that $T(0)=0$
+
+$\begin{equation*}
+T(1) = \int^1_0 S(x)dx = S(x) |^1_0 - \int^1_0xs(x)dx = 0-0-0=0
+\end{equation*}$
+Because the mean preserving spread pushes weight out, the presumption is that $S(x) \geq 0$ for $0 \leq x \leq z$ for some z. It follows that $T(y) \geq 0$ for $y \in [0,1]$. 
+
+1. One way to characterize a MPS is by: 
+
+$\begin{equation*}
+T(1) = 0; T(y) \geq 0, y \; \forall [0,1] 
+\end{equation*}$
+
+2. Alternate viewL q is riskier than p if q = p+z where $E(z |p)=0$. i.e. q equals p plus noise.
+
+3. Third view; q is riskier than p if every risk averse agent has $p \succeq q$. This really means: $\int^1_0U(x)s(x)dx \leq 0$ for any function U. 
+
+These three notions are equivalent.
+
+"""
+
+# ╔═╡ d9f4ac2c-a352-437a-a6a3-8982fbc37b70
+md"""
+## Example
+"""
+
+# ╔═╡ ab6f0929-a3d1-47b2-92b1-2727e643e3fa
+md"""
+1. the function $p$ is a uniform on $[.1,.9]:p(x)=5/4$. One thing that I did not mention earlier is that a unifrom probability distribution on a continuous density function acts as the slope for the probability density function.
+"""
+
+# ╔═╡ d73c9e1f-35e4-4f28-8d64-80ba880b1903
+pvec = collect(range(.1,.9,length=101))
+
+# ╔═╡ 574135fd-8880-48b4-918f-9eb38e961cfa
+md"""
+We can use the knowledge that p is uniform on $[.1,.9]$ to derive the function because a uniform probability distribution is 
+
+$\begin{equation*}
+f(x) = \dfrac{1}{b-a}
+\end{equation*}$
+so the equation for p is 
+
+$\begin{align*}
+p(x) &= \dfrac{1}{.9-.1} \\
+&= \dfrac{1}{.8} \\
+&= \dfrac{5}{4}
+\end{align*}$
+which is what we are given above. Using this knowledge we can discover the mean of this function as
+
+$\begin{align*}
+E(p) &=  \int^.9_.1 x \dfrac{5}{4}dx \\
+&= \dfrac{5}{4} \int^.9_.1 x dx \\
+&= \dfrac{5}{4}[\dfrac{x^2}{2}]^.9_.1 \\
+&= \dfrac{5}{4} [\dfrac{(.9)^2}{2}-\dfrac{(.1)^2}{2}] \\
+&= \dfrac{1}{2}
+\end{align*}$
+
+"""
+
+# ╔═╡ d9d40ae3-92d9-44c0-b41d-0f843e5e0c5e
+function p(x)
+	p=0
+	if 0<= x < .1
+		p =0
+	elseif .1 <= x <=.9
+		p=5/4
+	elseif .9 < x <=1
+		p=0
+	end
+	return p
+end;
+
+# ╔═╡ 2b7d1d5d-a127-4453-9c3c-0b48b1fc2209
+begin
+    px = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(pvec, p.(pvec), linecolor=:black, linestyle=:solid, linewidth=2)
+
+	 # Axis limits
+    xlims!(0, 1.05*pvec[end])
+    ylims!(0, 1.2*maximum(1.25 .* pvec))
+    
+    # Axis labels
+    annotate!(1.071*pvec[end], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.212*maximum(1.25 .* pvec), text(L"p(x)", :center, :bottom, 12))
+
+	for n=(.1,.5,.9)
+	# Key points, with dashed lines to them
+    plot!([n,n], [0,p(n)], linecolor=:black, linestyle=:dash) 
+    plot!([0,n], [p(n),p(n)], linecolor=:black, linestyle=:dash)
+    scatter!([n], [p(n)], markercolor=:black, markersize=5)
+	end
+
+
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(fxvec))
+    
+    # Axis labels
+    annotate!(1.071*xVec[end], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.212*maximum(fxvec), text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f0 ,fxvec], [L"0", L"f(0)", L"f(x^*)"])
+
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,fxvec], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [fxvec,fxvec], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [fxvec], markercolor=:black, markersize=5)
+    =#
+
+
+   px	
+end
+
+
+# ╔═╡ b941855a-5ce3-4f9f-a698-3219bb70a5e5
+md"""
+Similarly we can solve for the variance given the information above
+
+$\begin{align*}
+V(p) &= \int^.9_.1(x - .5)^2\dfrac{5}{4}dx \\
+&= \dfrac{5}{4} \int^.9_.1(x - .5)^2dx \\
+&= \dfrac{5}{4} \int^.9_.1x^2 - x +.25 \; dx \\
+&= \dfrac{5}{4} [\dfrac{x^3}{3}- \dfrac{x^2}{2}+ .25x]^.9_.1 \\
+&= \dfrac{5}{4} [(\dfrac{.9^3}{3}- \dfrac{.9^2}{2}+ .25*.9)-(\dfrac{.1^3}{3}- \dfrac{.1^2}{2}+ .25*.1)] \\
+&= \dfrac{4}{75}
+\end{align*}$
+
+"""
+
+# ╔═╡ d3975cb3-949a-44b7-ac63-50177bf06717
+md"""
+2. q is Beta(2,2) (on [0,1]): $q(x)=6x(1-x)$
+"""
+
+# ╔═╡ a5890605-e957-4db7-ad1f-0715c6057ee0
+md"""
+Just like we did for the previous example we can calclate the Expected value of this function
+
+$\begin{align*}
+E(q) &= \int^1_0 6x^2(1-x) dx \\
+&= \int^1_0 6x^2 - 6x^3 dx \\
+&= [2x^3 - \dfrac{3}{2}x^4]^1_0 \\
+&= .5
+\end{align*}$
+
+"""
+
+# ╔═╡ 07d6e7ce-abe0-4b0b-b234-b9a485a48bf9
+qvec = collect(range(0,1,length=101))
+
+# ╔═╡ 8dbd6324-0f0e-4ba4-8004-fd58b22c8ef2
+begin #beta distribution
+	q(x) = 6*x * (1-x)
+end;
+
+# ╔═╡ 11ce2d97-744b-4e4b-b6a4-b0bb623b9896
+begin
+    qx = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(qvec, q.(qvec), linecolor=:black, linestyle=:solid, linewidth=2)
+
+	# Axis limits
+    xlims!(0, 1.05*qvec[end])
+    ylims!(0, 1.2*maximum(q.(qvec)))
+    
+    # Axis labels
+    annotate!(1.071*qvec[end], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.212*maximum(q.(qvec)), text(L"q(x)", :center, :bottom, 12))
+
+	 # Key points, with dashed lines to them
+    plot!([.5,.5], [0,q(.5)], linecolor=:black, linestyle=:dash) 
+    plot!([0,.5], [q(.5),q(.5)], linecolor=:black, linestyle=:dash)
+    scatter!([.5], [q(.5)], markercolor=:black, markersize=5)
+	
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(fxvec))
+    
+    # Axis labels
+    annotate!(1.071*xVec[end], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.212*maximum(fxvec), text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f0 ,fxvec], [L"0", L"f(0)", L"f(x^*)"])
+
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,fxvec], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [fxvec,fxvec], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [fxvec], markercolor=:black, markersize=5)
+    =#
+
+
+   qx	
+end
+
+
+# ╔═╡ bc7d713b-90ad-4236-9627-a2e572158245
+md"""
+Similarly we can calculate the variance as 
+
+$\begin{align*}
+V(q) &= \int^1_0 (x-.5)^2 (6x(1-x))dx \\
+&= \int^1_0 (x^2-x+.25)(6x-6x^2)dx \\
+&= \int^1_0 (-6x^4+12x^3-7.5x^2+1.5x)dx \\
+&= [-1.2x^5 + 3x^4 - 2.5x^3 + .75x^2]^1_0 \\
+&=\dfrac{1}{20}
+\end{align*}$
+
+"""
+
+# ╔═╡ c409a522-e379-4f74-b24f-2a93df579670
+md"""
+The summary for the two probability functions is 
+
+p is uniform on $[.1,.9]$
+
+$\begin{align*}
+p(x) &= \dfrac{5}{4} \\
+E(p) &= \dfrac{1}{2} \\
+V(p) &= \dfrac{4}{75}
+\end{align*}$
+q is Beta(2,2) on $[0,1]$ 
+
+$\begin{align*}
+q(x) &= 6x(1-x) \\
+E(q) &= \dfrac{1}{2} \\
+V(q) &= \dfrac{1}{20}
+\end{align*}$
+This means that $V(p) > V(q)$
+"""
+
+# ╔═╡ ce987dce-0053-41cf-864d-89df4266458d
+md"""
+3. The utility function $u(x)=10x$ for $x \in [0,.1], \; u(x)=1$ for $x \in [.1,1]$
+"""
+
+# ╔═╡ e017f9b4-b964-4b37-83b0-b97ada70ca78
+uvec = collect(range(0,1,length=101))
+
+# ╔═╡ c9d7d115-c7f6-45d3-a86e-3fe7e0d053b3
+function u(x)
+	u=0
+	if 0 <= x <= .1
+		u=10*x
+	elseif .1 < x <= 1
+		u=1
+	end
+	return u
+end;
+
+# ╔═╡ ca534411-8fa8-4a85-8392-3b24299a0007
+begin
+    ux = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(uvec, u.(uvec), linecolor=:black, linestyle=:solid, linewidth=2)
+
+	# Axis limits
+    xlims!(0, 1.05*uvec[end])
+    ylims!(0, 1.2*maximum(u.(uvec)))
+    
+    # Axis labels
+    annotate!(1.071*uvec[end], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.212*maximum(u.(uvec)), text(L"u(x)", :center, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(fxvec))
+    
+    # Axis labels
+    annotate!(1.071*xVec[end], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.212*maximum(fxvec), text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f0 ,fxvec], [L"0", L"f(0)", L"f(x^*)"])
+
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,fxvec], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [fxvec,fxvec], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [fxvec], markercolor=:black, markersize=5)
+    =#
+
+
+   ux	
+end
+
+
+# ╔═╡ 1c87bb76-ba66-4984-b9ed-5d62bba19afc
+md"""
+To compare expected utilities for each probability distribution we must some up the utility equation times the probability distribution at every instant.
+
+$\begin{align*}
+E_pU &= \int^.1_0 10x * 0 dx + \int_.1^.9 1 * \dfrac{5}{4} dx + \int^1_.9 1 * 0 dx \\
+&= \int_.1^.9  \dfrac{5}{4} dx \\
+&= [\dfrac{5}{4} x]^.9_.1 \\
+&= 1.125 - .125 \\
+&=1
+\end{align*}$
+
+$\begin{align*}
+E_qU &= \int^.1_0 10x * 6x(1-x)dx + \int^1_.1 1 * 6x(1-x)dx \\
+&= \int^.1_0 60x^2(1-x)dx + \int^1_.1  6x(1-x) dx\\
+&= \int^.1_0 60x^2 - 60x^3dx + \int^1_.1  6x-6x^2 dx \\
+&= [20x^3 - 15x^4]^.1_0 + [3x^2-2x^3]^1_.1 \\
+&= [.02-.0015] + [(3-2)-(.03-.002)] \\
+&= .0185 + 1 -.028 \\
+&= .9905
+\end{align*}$
+This implies that $E_pU>E_qU$
+"""
+
+# ╔═╡ 28c559cb-88a5-442d-a8f6-7408ac9f7d08
+begin #Expected utility functions
+	EpU(x) = u(x)*p(x)
+	EqU(x) = u(x)*q(x)
+end;
+
+# ╔═╡ 6d7649f5-1d98-4211-8198-ce4d86205b24
+begin
+    pX = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(uvec, EpU.(uvec), linecolor=:black, linestyle=:solid, linewidth=2)
+	plot!(uvec, EqU.(uvec), linecolor=:black, linestyle=:solid, linewidth=2)
+
+	# Axis limits
+    xlims!(0, 1.05*qvec[end])
+    ylims!(0, 1.2*maximum(q.(qvec)))
+    
+    # Axis labels
+    annotate!(1.071*qvec[end], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.212*maximum(q.(qvec)), text(L"E(x)", :center, :bottom, 12))
+
+	 # Key points, with dashed lines to them
+    plot!([.5,.5], [0,EpU(.5)], linecolor=:black, linestyle=:dash) 
+    plot!([0,.5], [EpU(.5),EpU(.5)], linecolor=:black, linestyle=:dash)
+    scatter!([.5], [EpU(.5)], markercolor=:black, markersize=5)
+
+	 # Key points, with dashed lines to them
+    plot!([.5,.5], [0,EqU(.5)], linecolor=:black, linestyle=:dash) 
+    plot!([0,.5], [EqU(.5),EqU(.5)], linecolor=:black, linestyle=:dash)
+    scatter!([.5], [EqU(.5)], markercolor=:black, markersize=5)
+	
+	annotate!(.6, EqU(.6), text(L"E_qU", :left, :bottom, 12))
+	annotate!(.8, EpU(.8), text(L"E_pU", :left, :bottom, 12))
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(fxvec))
+    
+    # Axis labels
+    annotate!(1.071*xVec[end], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.212*maximum(fxvec), text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f0 ,fxvec], [L"0", L"f(0)", L"f(x^*)"])
+
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,fxvec], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [fxvec,fxvec], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [fxvec], markercolor=:black, markersize=5)
+    =#
+
+
+   pX	
+end
+
+
+# ╔═╡ 0454eed6-e4c6-46fc-9b47-2b5e4e850e5b
+md"""
+## Demand for Insurace
+"""
+
+# ╔═╡ 8f5c75df-07de-4236-94c5-e79786b0b5f6
+md"""
+Suppose there are 2 states: good news and bad news. No fire/ fire. 
+
+Wealth = $Y$ in state 1, $\hat{Y}=Y- \Delta <Y$ in state 2.
+
+Probability of state 1 (resp., state 2) $= \rho$ (resp., $1- \rho$)
+
+Potential loss, $\Delta$ may be insured against by paying $a \delta$, the individual gets $a \Delta$ back in state 2 (0 in state 1).Thus $a$ is the proportion of loss the agent insures against. $a \in [0.1]$ defines a set of lotteries. 
+
+If an agent satisfies axioms A1-A3, her optimization problem us 
+
+$\begin{equation*}
+\max_{\Omega, V_1, V_2, \hat{Y}, a \in [0,1]} \Omega
+\end{equation*}$
+subject to
+
+$\begin{align*}
+\Omega &= \rho V_1 + (1-\rho)V_2 \\
+V_1 &= V(Y - a \delta) \\
+V_2 &= V(\hat{Y}-a \delta + a\Delta) \\
+\hat{Y} &= Y-\Delta
+\end{align*}$
+
+$\begin{align*}
+\max_{a \in [0,1]}\Omega &= \rho V(Y - a \delta) + (1-\rho)V(Y- \Delta - a \delta + a \Delta) \\
+&= \rho V(Y - a \delta) + (1-\rho)V(Y - \Delta(1-a)-a\delta).
+\end{align*}$
+The first-order condition for an interior solution is 
+
+$\begin{align*}
+\dfrac{\partial \Omega}{\partial a} &= -\rho V'(Y-a \delta)\delta + (1-\rho)V'(Y-\Delta(1-a)-a\delta)(\Delta - \delta)=0 \\
+&\Leftrightarrow\quad   \rho V'(Y-a \delta)\delta = (1-\rho)V'(Y-\Delta(1-a)-a\delta)(\Delta - \delta) \\
+&\Leftrightarrow\quad \dfrac{ \rho}{1- \rho} = \dfrac{ V'(Y-\Delta(1-a)-a\delta)}{V'(Y-a \delta)} \dfrac{(\Delta - \delta)}{\delta}
+\end{align*}$
+
+"""
+
+# ╔═╡ 58b6fa38-8e48-45d5-911b-ea1344f78dab
+md"""
+There are Two Cases
+
+1. Insurance is actuarially fair: expected payout equals the premium: 
+
+$\begin{align*}
+\dfrac{\dfrac{\rho}{1- \rho}}{\dfrac{\Delta - \delta}{\delta}} &= 1 \\
+\dfrac{\rho}{1- \rho} &= \dfrac{\Delta - \delta}{ \delta} \\
+\end{align*}$
+This implies 
+
+$\begin{equation*}
+1 = \dfrac{ V'(Y-\Delta(1-a)-a\delta)}{V'(Y-a \delta)}
+\end{equation*}$
+
+Monotonicity in $V'$ with $V''<0$, implies
+
+$\begin{equation*}
+Y-a \delta = V'(Y-\Delta(1-a)-a\delta
+\end{equation*}$
+this implies that $a=1$ where every risk averse consumer will fully insure when insurance is fairly priced. 
+
+2. Insurance is 'overpriced':
+
+$\begin{align*}
+\dfrac{\dfrac{\rho}{1- \rho}}{\dfrac{\Delta - \delta}{\delta}} &> 1 \\
+\dfrac{\rho}{1- \rho} &> \dfrac{\Delta - \delta}{ \delta} \\
+\end{align*}$
+In this case, the first-order condition implies 
+
+$\begin{equation*}
+1 < \dfrac{ V'(Y-\Delta(1-a)-a\delta)}{V'(Y-a \delta)}
+\end{equation*}$
+equivalently $V'(Y-\Delta(1-a)-a\delta) > V'(Y-a \delta)$. For concace VNM utility 
+
+$\begin{equation*}
+V'' < 0 \Rightarrow Y-\Delta(1-a)-a\delta < Y-a \delta \Leftrightarrow a < 1 
+\end{equation*}$
+This implies that a risk averse agent will under-insure when insurance is over-priced. 
+"""
+
+# ╔═╡ 2bde0793-effb-4fb5-815e-4342d6086318
+md"""
+Risk-Neutral Agent's Problem
+
+The VNM utility function for a risk-neutral agent is linear in wealth: 
+
+$\begin{equation*}
+V(Y) = \alpha + \beta Y, \; \beta > 0
+\end{equation*}$
+hence 
+
+$\begin{equation*}
+\dfrac{\partial \Omega}{\partial a} = - \rho \beta \delta + (1-\rho)\beta(\Delta - \delta)
+\end{equation*}$
+thus:
+
+$\begin{equation*}
+a^* = 
+\begin{bmatrix}
+- \infty &  \text{if} \; (1 - \rho)\Delta < \delta \\
+\text{indeterminate} & \text{if} \; (1 - \rho)\Delta = \delta \\
+\infty &  \text{if} \; (1 - \rho)\Delta > \delta 
+\end{bmatrix}
+\end{equation*}$
+(If $a \in [\underline{a}, \overline{a}])$ as when as when $0 \leq a \leq a$, then $\underline{a}$ replaces $\infty, \overline{a}$ replaces $\infty$. A risk-neutral agent: is indifferent between combinations if insurance is fairly priced and wants (infinitely) negative insurance if insurance is over-priced.
+
+"""
+
+# ╔═╡ 385f8bee-6b52-4365-9816-c35d6119f681
+md"""
+Graphical Analysis:
+
+Denote wealth in state $k= 1,2$ by $Y_k$. 
+
+Indifference Curves: combinations $(Y_1,Y_2)$ with $\rho V(Y_1)+(1-\rho)V(Y_2) = Constant$
+
+totally differentiate to get $\rho V'(Y_1)dY_1 + (1-\rho)V'(Y_2)dY_2 = 0$
+
+so the $MRS = | \dfrac{dY_2}{dY_1}| = \dfrac{\rho V'(Y_1)}{(1-\rho)V'(Y_2)}$
+
+The solid line connecting $(Y, Y- \Delta)$ with $(Y-\delta, Y-\delta)$ is the set of potential insurance contracts.
+
+Akin to a "budget line"; its slope is $\dfrac{Y - \delta - (Y-\Delta)}{Y-\delta-Y}=-\dfrac{\Delta - \delta}{\delta}$
+
+magnitude of slope, $\dfrac{\Delta - \delta}{\delta}$ is akin to price ratio. 
+
+At an interior optimum: 
+
+$\begin{equation*}
+\dfrac{\rho V'(Y_1)}{(1-\rho)V'(Y_2)} = \dfrac{\Delta - \delta}{\delta}, \text{or} \; \dfrac{\rho}{1-\rho}=\dfrac{V'(Y_2)}{V'(Y_1)}\dfrac{\Delta- \delta}{\delta}
+\end{equation*}$
+For a risk averse agent, these indifference curves are convex to the origin. 
+
+The MRS is 
+
+$\begin{align*}
+& [\rho / (1-\rho)]\dfrac{V'(Y)}{V'(Y-\Delta)} \; \text{at the endowment} \\
+& [\rho / (1-\rho)]\dfrac{V'(Y)}{V'(Y-\Delta)}= \dfrac{\rho}{1-\rho} \; \text{at full insurance} 
+\end{align*}$
+
+"""
+
+# ╔═╡ 9759b88f-5e76-4ec4-8d84-df3538845a80
+begin #parameters
+	#fair
+	Y=1300
+	Δ=1000
+	ρ=.5
+	#fair
+	δ_f=500
+	#overpriced
+	δ_o=550
+	#underpriced
+	δ_u=450
+end;
+
+# ╔═╡ 25774037-0822-450d-9bcb-218221a152f0
+begin #equations
+	Ω(Y,a,δ,ρ,Δ) = ρ*V(Y1(Y,a,δ)) + (1-ρ)*V(Y2(Y,Δ,a,δ)) #optimization problem
+	Ω_IC(Y1,Y2) = ρ*V(Y1)+(1-ρ)*V(Y2) #optimization problem for the IC graphs
+	V(Y) = Y^(.5) #Actors concave Utility function
+	Y1(Y,a,δ) = Y-a*δ #wealth in state 1 
+	Y2(Y,Δ,a,δ) = Yhat(Y,Δ) - a*δ + a*Δ  #wealth in state 2
+	Yhat(Y,Δ)=Y-Δ 
+#____________________________________________________________________#
+	Ω_a(Y,a,δ,ρ,Δ)=ρ*V_Y(Y1(Y,a,δ))*Y1_a(Y,a,δ) + (1-ρ)*V_Y(Y2(Y,Δ,a,δ))*Y2_a(Y,Δ,a,δ) #opt problem FOC
+	V_Y(Y) = .5*Y^(-.5) 
+	Y1_a(Y,a,δ) = -δ
+	Y2_a(Y,Δ,a,δ) = Δ-δ
+#_______________________________________________________________#
+	Y2_line(Y,Δ,a,δ,Y1) = (Y2_a(Y,Δ,a,δ)/Y1_a(Y,a,δ))*(Y-Y1)
+end;
+
+# ╔═╡ 7e5f7988-36ae-4474-99c6-6569b3720919
+begin
+	domain2 = (a,b)
+	prob2 = IntegralProblem(V, domain2)
+	sol2 = solve(prob2, HCubatureJL(); reltol = 1e-3, abstol = 1e-3)
+	sol2.u
+end
+
+# ╔═╡ 999f92c1-4062-47cc-8691-bac24a18b073
+function a_opt(Y,δ,ρ,Δ)
+
+
+# Define the zero condition at the parameter value supplied
+cond(a) =  Ω_a(Y,a,δ,ρ,Δ)
+
+
+# Specify a starting guess
+a0 = .1
+
+
+# Find and return the solution
+a = find_zero(cond, a0)
+
+end;
+
+# ╔═╡ bbad5581-ed40-4f2c-9a71-7b365884e677
+Yvec = (collect(range(0,Y*1.1,length=2000)))
+
+# ╔═╡ daf55f34-6610-409b-8bf7-c21717fdb9f3
+begin
+    insurancegraph = plot(
+    tickdirection=:out,
+    tickfontsize=12,
+    tickfont=:Times,
+    grid=false,
+    legend=false,
+    top_margin=18Plots.pt,
+    right_margin=18Plots.pt,
+    left_margin=12Plots.pt,
+    widen=false,
+    #widen=1.02,
+    #framestyle = :origin,
+    #aspect_ratio = :equal,
+    #size=(800,1200),
+    #xticks=0:5:25,
+    #yticks=0:5:25,
+    )
+    
+    # Curves
+    plot!(Yvec, Yvec, linecolor=:black, linestyle=:solid, linewidth=2)
+
+	
+
+
+	#Fair Price
+	plot!([Y,Y1(Y,a_opt(Y,δ_f,ρ,Δ),δ_f)], [Yhat(Y,Δ),Y2(Y,Δ,a_opt(Y,δ_f,ρ,Δ),δ_f)], linecolor=:black, linestyle=:solid,linewidth=2) 
+	scatter!([Y1(Y,a_opt(Y,δ_f,ρ,Δ),δ_f)], [Y2(Y,Δ,a_opt(Y,δ_f,ρ,Δ),δ_f)], markercolor=:black, markersize=5)
+	contour!(Yvec, Yvec, Ω_IC, levels=[Ω(Y,a_opt(Y,δ_f,ρ,Δ),δ_f,ρ,Δ)], 
+		linecolor=:black, clabels=false)
+
+	#Over Priced
+	plot!([Y,Y1(Y,a_opt(Y,δ_o,ρ,Δ),δ_o)], [Yhat(Y,Δ),Y2(Y,Δ,a_opt(Y,δ_o,ρ,Δ),δ_o)], linecolor=:black, linestyle=:solid,linewidth=2) 
+	scatter!([Y1(Y,a_opt(Y,δ_o,ρ,Δ),δ_o)], [Y2(Y,Δ,a_opt(Y,δ_o,ρ,Δ),δ_o)], markercolor=:black, markersize=5)
+	contour!(Yvec, Yvec, Ω_IC, levels=[Ω(Y,a_opt(Y,δ_o,ρ,Δ),δ_o,ρ,Δ)], 
+		linecolor=:black, clabels=false)
+	#Under Priced
+	plot!([Y,Y1(Y,a_opt(Y,δ_u,ρ,Δ),δ_u)], [Yhat(Y,Δ),Y2(Y,Δ,a_opt(Y,δ_u,ρ,Δ),δ_u)], linecolor=:black, linestyle=:solid,linewidth=2) 
+	scatter!([Y1(Y,a_opt(Y,δ_u,ρ,Δ),δ_u)], [Y2(Y,Δ,a_opt(Y,δ_u,ρ,Δ),δ_u)], markercolor=:black, markersize=5)
+	contour!(Yvec, Yvec, Ω_IC, levels=[Ω(Y,a_opt(Y,δ_u,ρ,Δ),δ_u,ρ,Δ)], 
+		linecolor=:black, clabels=false)
+
+	# Key points, with dashed lines to them
+    plot!([Y,Y], [0,Yhat(Y,Δ)], linecolor=:black, linestyle=:dash) 
+    plot!([0,Y], [Yhat(Y,Δ),Yhat(Y,Δ)], linecolor=:black, linestyle=:dash)
+    scatter!([Y], [Yhat(Y,Δ)], markercolor=:black, markersize=5)
+
+	# Axis limits
+    xlims!(0, 1.05*Yvec[end])
+    ylims!(0, 1.05*Yvec[end])
+    
+    # Axis labels
+    annotate!(1.071*Yvec[end], 0, text(L"Y_1", :left, :center, 12))
+    annotate!(0, 1.03*Yvec[end], text(L"Y_2", :center, :bottom, 12))
+
+	# Axis ticks
+    xticks!([0.001, Y], [L"0", L"Y"])
+    yticks!([0.001, Yhat(Y,Δ)], [L"0", L"Y-\Delta"])
+
+	
+    #=
+    # Axis limits
+    xlims!(0, 1.05*xVec[end])
+    ylims!(0, 1.2*maximum(fxvec))
+    
+    # Axis labels
+    annotate!(1.071*xVec[end], 0, text(L"x", :left, :center, 12))
+    annotate!(0, 1.212*maximum(fxvec), text(L"y", :center, :bottom, 12))
+  
+    # Axis ticks
+    xticks!([0.001, xstar], [L"0", L"x^*"])
+    yticks!([0.001, f0 ,fxvec], [L"0", L"f(0)", L"f(x^*)"])
+
+
+    # Curve labels
+    flx = 1.5*xstar
+    fly = 1.01*f(flx)
+    annotate!(flx, fly, text(L"f(x)", :left, :bottom, 12))
+
+
+    # Key points, with dashed lines to them
+    plot!([xstar,xstar], [0,fxvec], linecolor=:black, linestyle=:dash) 
+    plot!([0,xstar], [fxvec,fxvec], linecolor=:black, linestyle=:dash)
+    scatter!([xstar], [fxvec], markercolor=:black, markersize=5)
+    =#
+
+
+   insurancegraph	
+end
+
+
+# ╔═╡ 0d2a3900-6d61-4b8b-b61f-31bf6748bd62
+md"""
+Demand for Risky Assets
+
+Consider an agent who wishes to divide investment monies $W$ between two assets. Asset 1 is riskless and it pays $r$ on every USD invested in it. Asset 2 is risky, it pays $\theta$ on every USD ivested in it. $\theta$ is random. Possbile outcomes $supp(π)$ with probabilities $\pi(\theta)$.$\pi$ is the lottery associated with the random return $\theta$. The agent's decision problem can be represented as 
+
+$\begin{equation*}
+\max_\alpha \Omega = \Sigma_{\theta \in supp(\theta)} V(\alpha \theta + [W-\alpha]r)\pi(\theta)
+\end{equation*}$
+The VNM utility function is $V$, $\alpha$ is the amount to be invested in asset 2. One might wish to impose $\alpha \in [0,W]$ or might want to allows selling short $(\alpha < 0)$ or "over-betting. The first-order condition:
+
+$\begin{equation*}
+\dfrac{\partial \Omega}{\partial \alpha} = \Sigma_{\theta \in supp(\theta)} V'(\alpha \theta + [W-\alpha]r)\pi(\theta) (\theta-r) = 0
+\end{equation*}$
+The essense of this problem is well-caputed by a two-state problem. Let sate 1 be good news $(\theta = \theta_1 > r)$ with associated proability $\pi$. Let state 2 be bad news $(\theta = \theta_2 <r)$ with probability $1 -\pi$. The optimization problem is 
+
+$\begin{equation*}
+\max_\alpha \{\pi V(\alpha \theta_1 + [W-\alpha]r)+(1-\pi)V(\alpha \theta_2+[W-\alpha]r) \}
+\end{equation*}$
+with the first-order condition
+
+$\begin{equation*}
+\pi V'(\alpha \theta_1 + [W-\alpha]r)(\theta_1-r)+(1-\pi)V'(\alpha \theta_2+[W-\alpha]r)(\theta_2-r)=0
+\end{equation*}$
+rarranging yields
+
+$\begin{equation*}
+\dfrac{\pi}{1-\pi} = \dfrac{V'(\alpha \theta_2 + [W-\alpha]r)}{V'(\alpha \theta_1 + [W-\alpha]r} (\dfrac{r-\theta_2}{\theta_1-r}).
+\end{equation*}$
+
+Interpretation 
+Basically the same as the insurance problem if we let 
+
+$\begin{align*}
+\delta &= (\theta_1-r)W \\
+\Delta &= (\theta_1-\theta_2)W \\
+a &= (W-\alpha)/W \\
+Y &= \theta_1 W
+\end{align*}$
+so that 
+
+$\begin{align*}
+\alpha \delta &= (W - \alpha)(\theta_1 - r) \\
+Y - \alpha \delta &= \theta_1W-(W-\alpha)(\theta_1-r)=\alpha \theta_1 = (W-\alpha)r \\
+Y-(1-a)\Delta - a \delta &= \alpha \theta_1 + [W-\alpha]r-\alpha(\theta_1-\theta_2) =\alpha \theta_2 + (W-\alpha)r \\
+\dfrac{\Delta - \delta}{\delta} &= (\dfrac{\theta-1-\theta_2}{\theta_1-r})(\dfrac{W-(\theta_1-r)W}{W}) = \dfrac{r-\theta_2}{\theta_1-r}
+\end{align*}$
+
+
+"""
+
+# ╔═╡ 57e914ab-36af-4dde-a836-0bee3d5c019c
+md"""
+This suggests same graphical interpretation as insurance problem added idea that we allow short-selling $(\alpha < 0)$ or long selling $(\alpha > w)$. if we included contraint (one cannot have negative income after the resolutoin of uncertainty) a standard choice problem emerges. 
+"""
+
+# ╔═╡ 716452c5-9be7-4650-9174-06cb6af8d11f
+md"""
+Graphical Analysis
+
+Budget line: combinations $W_1,W_2$ with 
+
+$\begin{align*}
+W_1+W_2 &= \pi Y + (1-\pi)\hat{Y} \\
+W_1,W_2 \geq 0
+\end{align*}$
+The slope of the budget line is $-\dfrac{\Delta-\delta}{\delta}$. $MRS=\dfrac{\Delta-\delta}{\delta}$. Analogously to above the againt will 
+
+$\begin{align*}
+\text{over insure when} (1-\pi)\Delta &> \delta \\
+\text{fully insure when} (1-\pi)\Delta &= \delta \\
+\text{under insure when} (1-\pi)\Delta &< \delta \\
+\end{align*}$
+
+$\begin{equation*}
+\underbrace{(1-\pi)(\theta_1 - \theta_2)}_{\text{potential loss}} - \underbrace{\theta-1-r}_{\text{premium}}
+\begin{bmatrix}
+>0& \\
+=0&\\
+< 0&
+\end{bmatrix}
+\end{equation*}$
+One key distinction here is that there is no concept of "fair" pricing/ 
+"""
+
+# ╔═╡ 813377a2-f7a1-46e4-8747-b9aeee15b9bc
+md"""
+## Taxes vs Standards
+"""
+
+# ╔═╡ 3c23aa32-f174-40c7-b2e4-6374bb116561
+md"""
+An environmentalregulator is tasked with controllong an externality. possilbe instruments are an abatement standard or an effluent tax. regulator does not know th firm's true marginal abatement cost curve. Suppose there are two possible values $MC_L$ or $MC_H$. Let $p=prob(MC=MC_L)$ in state 1 $(MC=MC_L)$ so $1-p=prob(MC=MC_H)$ in state 2 S(MC=MC_H)$.Marginal benefits are known to be $MB$. If a standard is set at $A$ net benefits are:
+
+$\begin{align*}
+NB^s_L &= \int^A_0 (MB-MC_L)dA = NB^*_L - \int^{A^*_L}_A(MB-MC_L)dA \; \text{in state 1} \\
+NB^s_H &= \int^A_0 (MB-MC_H)dA = NB^*_H - \int^{A}_{A^*_H}(MB_H-MB)dA \; \text{in state 2}
+\end{align*}$
+payoffs $(NB^s_L,NB^s_H)$ and probabilities $(p,1-p)$ determine a lottery. 
+"""
+
+# ╔═╡ 951c2fdc-e793-4867-838b-aac2c7a66dca
+md"""
+if a tax is set at $\tau$ abatement is 
+
+$\begin{equation*}
+A = 
+\begin{bmatrix}
+\hat{A}_H, \text{where} MC_H(\hat{A}_H)=\tau \; \text{in state 2} \\
+\hat{A}_L, \text{where} MC_L(\hat{A}_L)=\tau \; \text{in state 1} 
+\end{bmatrix}
+\end{equation*}$
+Net benefits are
+
+$\begin{align*}
+NB^t_L &= \int^{\hat{A}_L}_0 (MB-MC_L)dA = NB^*_L - \int^{\hat{A}_L}_{A^*_L}(MC_L-MB)dA \; \text{in state 1} \\
+NB^t_H &= \int^{\hat{A}_H}_0 (MB-MC_H)dA = NB^*_H - \int^{A^*_H}_{\hat{A}_H}(MB-MC_H)dA \; \text{in state 2}
+\end{align*}$
+payoffs $(NB^t_L,NB^t_H)$ and probabilities $(p,1-p)$ determine a lottery. Which lottery is preferred? Must specify VNM utility function for regulator. Assuming he is risk-neutral this implies the VNM utility is expected net benefits. 
+"""
+
+# ╔═╡ 7d0ae59a-d314-4d76-9889-ee96994cb51c
+md"""
+Determine Optimal Instrument
+
+1. Optimal standard $A^*$ solves 
+
+$\begin{align*}
+0 &= \dfrac{d ENB(A)}{dA} \\
+&= p[MB(A^*)-MC_L(A^*)-(1-p)[MC_H(A^*)-MB(A^*)]]
+\end{align*}$
+i.e. marginal benefits equal expected marginal costs. 
+
+2. Optimal tax $\tau^*$ solves $\dfrac{d ENB(A(\tau))}{d\tau}=0$ with either MC curve, abatement sets $MC=\tau$thus $dMC'dA=d\tau \Rightarrow A'(\tau)=\dfrac{1}{MC'(A)}$. The first-order condition is 
+
+$\begin{equation*}
+-p[MC_L(\hat{A_L(\tau^*)})-MB(\hat{A}_L(\tau^*))] = (1-p)[MC_H(\hat{A}_H(\tau^*))-MB(\hat{A}(\tau^*))]=0
+\end{equation*}$
+expected marginal benefits equal marginal costs $(=\tau^*)$ can also show $p\hat{A}_L(\tau^*)+(1-p)\hat{A}_H(\tau^*)=A^*$
+"""
+
+# ╔═╡ fd166eae-f977-4f46-b3e9-e452b51f5738
+md"""
+Comparing Expectd net benefits
+
+$\begin{align*}
+ANB(A^*)-ENB(\tau^*) &= \\
+&\int^{\hat{A}_L}_{A^*}(MC_L-MB)dA - (1-p) \int^{A^*}_{\hat{A}_H}(MB-MC_H)dA \\
+&+ p\int^{\hat{A}_L(\tau^*)}_{A^*_L} (MB-MC_L)dA + (1-p) \int^{\hat{A}_H}_{\hat{A}_H(\tau^*)}(MC_H-MB)dA \\
+&= pDWL_L(\tau^*)+(1-p)DWL_H(\tau^*)\\
+&-(pDWL_L(A^*)+(1-p)DWL_H(A^*))
+\end{align*}$
+i.e. $ENB*A^*)-ENB(\tau^*)=EQWL(\tau^*)-EDWL(A^*)$
+
+pick the intrument yielding the smaller deadweight welfare loss and this turns out to depend on slopes of MC, MB curves. If MB is flatter than MC then $\tau^* \succ A^*$ If MB is steeper than MC then $A^* \succ \tau^*$.
+"""
+
+# ╔═╡ Cell order:
+# ╠═b953ea68-e3cf-11ef-1b30-5f45119d6329
+# ╠═7707e235-b8f0-4a9f-be1a-cbbe45275d85
+# ╟─1d317fab-514c-45ab-87be-f8ebc76b936e
+# ╟─7fe37d56-f327-4031-9624-55b8b1605f17
+# ╟─6fe23858-f45e-4404-87f2-364e21d2a8f2
+# ╟─3a385ee9-8bae-42eb-a00a-211b20d3ff32
+# ╟─23fe0dae-d3eb-466e-9b0c-ec80b1bc3346
+# ╟─34266106-29da-4bd2-8f3d-103d6bd68789
+# ╟─18e75ba1-35c1-46cc-af06-0387a96b1b5a
+# ╟─a1a3147d-6523-4ee1-bf5c-fe5cd2509fc0
+# ╠═ed03654d-bce0-4ac5-9a44-5136e21538f5
+# ╠═7a363aa8-3790-4432-b55c-7465168abc5f
+# ╟─f83716b5-38f3-4f76-a09a-27b549f8e295
+# ╟─c5111caf-f0b5-429e-b436-8f08b5b96001
+# ╟─36250445-482f-463f-811b-09e5134e27f6
+# ╟─0d531899-c6fb-495a-a7ac-c25e38967a1c
+# ╠═1f9156dd-2a4a-46d7-ad21-8fb5cd3fb168
+# ╠═46eef95e-ee38-4f5d-825a-b6efd6abb8bb
+# ╟─443e9863-517d-4dc1-91c4-604d53ce6112
+# ╟─ef9dae12-aeef-4183-bba7-57dc7100ead8
+# ╟─2969d270-758d-43a4-9604-6ce4805b4d74
+# ╠═9d00583a-f08c-4709-b49a-ff1089d80017
+# ╠═7e5f7988-36ae-4474-99c6-6569b3720919
+# ╟─68e4a4ed-6505-4ba1-ad08-14f3ddd8c3bc
+# ╟─e484bdeb-1fca-4b83-b309-3776bd5eaf05
+# ╟─b757817c-474e-48c3-9624-0cb0e502bde9
+# ╟─69ef72e0-933e-4e7b-a78d-babe8d8b3db9
+# ╟─44841e6e-5a96-49d0-b634-94f429d31a2c
+# ╟─2b5e38f7-ab6c-4b0c-af34-3e71d0612399
+# ╟─29c22607-8c76-4966-a287-4f8fb31bd663
+# ╟─c3db0104-0bc6-4f18-8810-73be98a1ae03
+# ╟─9c856d85-2280-4882-bec5-1e7b751a3d31
+# ╟─4b9dea00-6476-4e14-a416-7415d875bafc
+# ╟─2d5b8152-ab44-4f95-a380-aab886843041
+# ╟─4f21746f-b8c3-44cf-bf13-660c8b0eb079
+# ╟─671975ac-c4c2-4254-b36b-ffb88ecb6b19
+# ╟─b885badd-41be-4603-9803-9812784b6c22
+# ╟─52986749-1048-4513-8de6-6c570fceefe1
+# ╟─327b7beb-6398-4c23-88b5-7e0ba2e14453
+# ╟─f5b1cbbf-92f0-4514-908d-548da32f258d
+# ╟─d83ed239-8b8c-4505-9c50-3441f15bca63
+# ╟─d2b9865b-ca63-4980-88f9-efb3e771cff2
+# ╟─56a9c4e6-ae91-4195-8c47-499fe2876535
+# ╟─4157a4be-d98b-47ed-9a62-6f98360b6eac
+# ╟─04df3120-4e78-4cdd-8c62-3af50648e708
+# ╟─6992f994-8bbb-46be-8907-7030b9e76f23
+# ╟─1469ac06-fbc7-4a31-873a-48a0bd473d7f
+# ╟─275ef211-4b3b-428f-92b8-8784f5988b32
+# ╟─82b93723-e4df-4253-8cc6-b6e2b0505e83
+# ╟─74690f25-14f0-4978-8182-9bd19189ef4d
+# ╟─146f2f79-a6f9-4316-bd44-e2cf48dac5df
+# ╟─7de4cbf3-cc93-41bd-afe7-ab2d2e49564b
+# ╟─a3df84a2-df85-4b6b-a71b-8c35742addbe
+# ╟─ccf97f2f-7db4-464d-8ae1-38fa1357fc1c
+# ╟─5f50ddbd-2b36-436c-a9ae-7451d83549dc
+# ╟─d9f4ac2c-a352-437a-a6a3-8982fbc37b70
+# ╟─ab6f0929-a3d1-47b2-92b1-2727e643e3fa
+# ╠═d73c9e1f-35e4-4f28-8d64-80ba880b1903
+# ╟─574135fd-8880-48b4-918f-9eb38e961cfa
+# ╠═d9d40ae3-92d9-44c0-b41d-0f843e5e0c5e
+# ╟─2b7d1d5d-a127-4453-9c3c-0b48b1fc2209
+# ╟─b941855a-5ce3-4f9f-a698-3219bb70a5e5
+# ╟─d3975cb3-949a-44b7-ac63-50177bf06717
+# ╟─a5890605-e957-4db7-ad1f-0715c6057ee0
+# ╠═07d6e7ce-abe0-4b0b-b234-b9a485a48bf9
+# ╠═8dbd6324-0f0e-4ba4-8004-fd58b22c8ef2
+# ╟─11ce2d97-744b-4e4b-b6a4-b0bb623b9896
+# ╟─bc7d713b-90ad-4236-9627-a2e572158245
+# ╟─c409a522-e379-4f74-b24f-2a93df579670
+# ╟─ce987dce-0053-41cf-864d-89df4266458d
+# ╟─e017f9b4-b964-4b37-83b0-b97ada70ca78
+# ╠═c9d7d115-c7f6-45d3-a86e-3fe7e0d053b3
+# ╟─ca534411-8fa8-4a85-8392-3b24299a0007
+# ╟─1c87bb76-ba66-4984-b9ed-5d62bba19afc
+# ╠═28c559cb-88a5-442d-a8f6-7408ac9f7d08
+# ╟─6d7649f5-1d98-4211-8198-ce4d86205b24
+# ╟─0454eed6-e4c6-46fc-9b47-2b5e4e850e5b
+# ╟─8f5c75df-07de-4236-94c5-e79786b0b5f6
+# ╟─58b6fa38-8e48-45d5-911b-ea1344f78dab
+# ╟─2bde0793-effb-4fb5-815e-4342d6086318
+# ╟─385f8bee-6b52-4365-9816-c35d6119f681
+# ╠═25774037-0822-450d-9bcb-218221a152f0
+# ╠═9759b88f-5e76-4ec4-8d84-df3538845a80
+# ╠═999f92c1-4062-47cc-8691-bac24a18b073
+# ╟─bbad5581-ed40-4f2c-9a71-7b365884e677
+# ╟─daf55f34-6610-409b-8bf7-c21717fdb9f3
+# ╟─0d2a3900-6d61-4b8b-b61f-31bf6748bd62
+# ╟─57e914ab-36af-4dde-a836-0bee3d5c019c
+# ╟─716452c5-9be7-4650-9174-06cb6af8d11f
+# ╟─813377a2-f7a1-46e4-8747-b9aeee15b9bc
+# ╟─3c23aa32-f174-40c7-b2e4-6374bb116561
+# ╟─951c2fdc-e793-4867-838b-aac2c7a66dca
+# ╟─7d0ae59a-d314-4d76-9889-ee96994cb51c
+# ╟─fd166eae-f977-4f46-b3e9-e452b51f5738

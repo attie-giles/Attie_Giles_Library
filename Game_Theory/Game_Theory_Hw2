@@ -1,0 +1,166 @@
+### A Pluto.jl notebook ###
+# v0.20.6
+
+using Markdown
+using InteractiveUtils
+
+# ╔═╡ 2f006bd4-ecb2-11ef-384c-11e7995bb953
+begin  
+    import Pkg   
+    Pkg.activate()  
+    
+	#using JuMP      # set up a model
+	#using Ipopt     # find a max or min
+	using Roots    # solve a single equation
+	#using NLsolve  # solve multiple equations
+	#using ForwardDiff # differentiate a function
+	#using QuadGK   # integrate a function
+    #using DynamicalSystems #dynamical systems
+    #using DifferentialEquations  
+	using GameTheory
+	using Graphs
+	using GraphPlot
+	using NetworkLayout
+	using DataStructures
+    #using Compiler
+    #using Flux
+    #using Turing  
+    using CairoMakie
+	using GraphMakie
+	#using OrdinaryDiffEq
+   # using  BenchmarkTools
+	#using Plots     # plot graphs
+	using Images
+	using PlutoUI   # use sliders, etc., in Pluto
+	using LaTeXStrings # use LaTeX in graphs
+    #using Printf #allows you to use sprintf
+end
+
+
+# ╔═╡ 04af8e74-b3a0-40b8-a267-356fa5bd8598
+PlutoUI.TableOfContents(title="Sections", indent=true, depth=4, aside=true)
+
+# ╔═╡ 5a705f75-e84e-4e04-9601-5dd19e60df55
+md"""
+# Game Thoery Problem Set 2
+"""
+
+# ╔═╡ 46ce2af7-bf27-4620-bb72-a9e6a07ddd67
+md"""
+## Question 1
+"""
+
+# ╔═╡ 7240ffb6-6a5b-431e-87fb-8978d5864fc0
+md"""
+Let $p'$ be a lottery giving prizes \$10 and \$20 with probability $2/3$ and $1/3$. respectively, and let $p$ be a lottery giving prizes \$5, \$15, and \$30 with probability $1/3$, $5/9$, and $1/9$, respectively. Show that any risk averse expected utility maximizer (weakly) prefers $p'$ to $p$. [Hint: the idea is to find a way to contstruct $p$ as a mean-preserving spread of $p'$.]
+"""
+
+# ╔═╡ 2a0c805c-c432-4c3b-80d2-a73a56838fc6
+md"""
+A risk-averse expected utility maximizer that satisfies the Von Neumann Morgenstern axioms is going to have the quality that his utility curve is concave and a concave utility satisfies the quality that $\delta_{\bar{x}} \succsim L(x)$ for any lottery of x. The two lotteries that this individual faces are represented below in a game tree,  
+"""
+
+# ╔═╡ f022b535-b052-4ad5-b7f6-a1b90c52addb
+begin
+
+# Define adjacency matrix
+adj_matrix = [0 1 1 0 0 0 0 0 ;
+              0 0 0 1 1 1 0 0 ;
+              0 0 0 0 0 0 1 1 ;
+              0 0 0 0 0 0 0 0 ;
+              0 0 0 0 0 0 0 0 ;
+              0 0 0 0 0 0 0 0 ;
+              0 0 0 0 0 0 0 0 ;
+              0 0 0 0 0 0 0 0 ]
+
+# Create directed graph
+g = SimpleDiGraph(adj_matrix)
+
+# Define layout
+layout = Buchheim()
+
+# Plot the graph
+fig, ax, graph_obj = graphplot(g, layout=layout, node_size=10, node_color=:white, nlabels=[" "," "," ","\$5","\$15","\$30","\$10","\$20"], nlabels_align=(:center, :center),nlabels_distance=4.0, elabels=["lottery p","lottery p'", "1/3", "5/9","1/9","2/3","1/3"], nlabels_fontsize=18, elabels_fontsize=18)
+
+
+hidedecorations!(ax)  # Hides axis labels and ticks
+hidespines!(ax)        # Hides the border around the plot
+
+fig
+	
+end
+
+# ╔═╡ e87288f1-17fc-4ac0-ae97-4dadb832536d
+md"""
+where the expected value for both lotteries is equivalent to $ \$40/3$ . Lottery $p$ has a higher variance than lottery $p'$ so we can construct the lottery $p$ as being equivalent to lottery $p'$ plus a mean-preserving spread $s$ conditional on $p'$ 
+
+$\begin{equation*}
+    p(x) = p'(x) + s(x)|p'(x). 
+\end{equation*}$
+
+For lottery s to be a mean preserving spread it must satisfy two conditions: an expected value of 0 and that the sum of the probabilities equal 1. The game tree below represents an example of such a mean-preserving spread in the form of a compound lottery,
+"""
+
+# ╔═╡ 9bf2bf40-e1be-4ba2-bc64-3d385d47ef84
+begin
+
+# Define adjacency matrix
+adj_matrix2 = [0 1 0 0 0 0 0 0 ;
+              0 0 1 1 0 0 0 0 ;
+              0 0 0 0 1 1 0 0 ;
+              0 0 0 0 0 0 1 1 ;
+              0 0 0 0 0 0 0 0 ;
+              0 0 0 0 0 0 0 0 ;
+              0 0 0 0 0 0 0 0 ;
+              0 0 0 0 0 0 0 0 ]
+
+# Create directed graph
+g2 = SimpleDiGraph(adj_matrix2)
+
+# Define layout
+layout2 = Buchheim()
+
+# Plot the graph
+fig2, ax2, graph_obj2 = graphplot(g2, layout=layout2, node_size=20, node_color=:white, nlabels=[" "," ","\$10 ","\$20","\$5","-\$5","-\$5","\$10"], nlabels_align=(:center, :center),nlabels_distance=4.0, elabels=["lottery p'","2/3", "1/3", "1/2","1/2","2/3","1/3"], nlabels_fontsize=18, elabels_fontsize=18)
+
+
+hidedecorations!(ax2)  # Hides axis labels and ticks
+hidespines!(ax2)        # Hides the border around the plot
+
+fig2 
+
+	
+end
+
+# ╔═╡ 0ab61150-97f7-4e90-8acd-47b588384cdd
+md"""
+Here we see that the player must first play lottery $p'$ then play a subsequent lottery which represents lottery s and these two lotteries together give the same values as lottery $p$ so as to satisfy equation \ref{lotteryp}. To prove this, notice that lottery $p$ gives the vector of prizes 
+
+$\begin{equation*}
+    (5:1/3,15:5/9, 30:1/9)
+\end{equation*}$
+
+ and notice that Figure \ref{fig:game_tree2} gives the following prizes 
+
+$\begin{equation*}
+    (15:1/3,5:1/3,15:2/9, 30:1/9)
+\end{equation*}$
+
+ which can be simplified to 
+ $\begin{equation*}
+    (5:1/3,15:5/9, 30:1/9)
+	\end{equation*}$
+which is identical to the vector of prizes for lottery p. To prove that a risk-averse expected utility maximizer would choose would choose lottery p' over lottery p notice that lottery p is just lottery p' plus noise. And since the noise is mean zero he would prefer the lottery without noise which is lottery p'. 
+"""
+
+# ╔═╡ Cell order:
+# ╠═2f006bd4-ecb2-11ef-384c-11e7995bb953
+# ╠═04af8e74-b3a0-40b8-a267-356fa5bd8598
+# ╟─5a705f75-e84e-4e04-9601-5dd19e60df55
+# ╟─46ce2af7-bf27-4620-bb72-a9e6a07ddd67
+# ╟─7240ffb6-6a5b-431e-87fb-8978d5864fc0
+# ╟─2a0c805c-c432-4c3b-80d2-a73a56838fc6
+# ╠═f022b535-b052-4ad5-b7f6-a1b90c52addb
+# ╟─e87288f1-17fc-4ac0-ae97-4dadb832536d
+# ╠═9bf2bf40-e1be-4ba2-bc64-3d385d47ef84
+# ╟─0ab61150-97f7-4e90-8acd-47b588384cdd
